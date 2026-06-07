@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { Sword } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 

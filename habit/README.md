@@ -1,16 +1,100 @@
-# React + Vite
+# Demon Slayer Habit
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A Vite + React habit tracker with a Demon Slayer inspired RPG loop: breathing techniques, daily missions, ranks, streaks, focus encounters, sword durability, corruption, analytics, and Capacitor mobile shells.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 and Vite
+- Zustand for client state
+- Supabase Auth, tables, RLS policies, RPCs, and triggers
+- Tailwind CSS v4
+- Capacitor for Android and iOS
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Install dependencies:
 
-## Expanding the ESLint configuration
+   ```bash
+   npm install
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+2. Create a local-only env file from the development template:
+
+   ```bash
+   cp .env.development.example .env.local
+   ```
+
+3. Fill in the values from your development Supabase project:
+
+   ```bash
+   VITE_APP_ENV=development
+   VITE_SUPABASE_URL=...
+   VITE_SUPABASE_ANON_KEY=...
+   VITE_SUPABASE_PROJECT_REF=...
+   ```
+
+4. Run the SQL in `supabase_schema.sql` in the development Supabase SQL editor.
+
+5. Start the app:
+
+   ```bash
+   npm run dev
+   ```
+
+## Useful Scripts
+
+```bash
+npm run dev
+npm run build
+npm run lint
+```
+
+For mobile builds, build the web app first, then sync Capacitor:
+
+```bash
+npm run build
+npx cap sync
+```
+
+## Supabase Environments
+
+Use separate Supabase projects for development and production. Do not reuse the production project URL or anon key in local development.
+
+Local development:
+
+```bash
+cp .env.development.example .env.local
+```
+
+`.env.local` should point to the development Supabase project:
+
+```bash
+VITE_APP_ENV=development
+VITE_SUPABASE_URL=https://your-dev-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-dev-anon-key
+VITE_SUPABASE_PROJECT_REF=your-dev-project-ref
+```
+
+Production deployment:
+
+Configure these in Vercel project settings, not in a committed file:
+
+```bash
+VITE_APP_ENV=production
+VITE_SUPABASE_URL=https://your-prod-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-prod-anon-key
+VITE_SUPABASE_PROJECT_REF=your-prod-project-ref
+```
+
+The app validates `VITE_SUPABASE_PROJECT_REF` against the host in `VITE_SUPABASE_URL` at startup. If the values do not match, it throws a clear configuration error instead of making auth requests against the wrong database.
+
+## Current Product Notes
+
+- Habit completions use the user's local calendar date on the client.
+- Daily mission targets are capped so they remain achievable with one completion per form per day.
+- Technique streak bonuses are recalculated from recent completion logs before awarding XP.
+- Growth analytics account for weekly habits instead of treating every technique as daily.
+
+## Important Schema Note
+
+This project still contains compatibility paths for older tables (`breathing_techniques`, `slayer_logs`, `encounter_logs`) while mirroring data into newer tables (`habits`, `activity_logs`). Keep `supabase_schema.sql` and the client stores in sync when changing habit or mission behavior.

@@ -5,6 +5,7 @@
  */
 import { create } from 'zustand';
 import { supabase } from '../lib/supabaseClient';
+import { parseDateKey, todayKey, toLocalDateKey } from '../lib/dateKeys';
 
 // ---------------------------------------------------------------------------
 // CONSTANTS
@@ -55,21 +56,19 @@ export const ARCHETYPES = {
   Balanced: { name: 'Total Concentration Master', desc: 'Harmony across all breathing forms', primary: 'Sun', secondary: 'Moon' },
 };
 
-const BREATHING_TO_CATEGORY = {
-  Water: 'Reading', Thunder: 'DSA', Flame: 'Running',
-  Stone: 'Workout', Wind: 'Cycling', Mist: 'Focus',
-  Love: 'Mindfulness', Serpent: 'Flexibility', Insect: 'Endurance',
-  Moon: 'Night Practice', Sun: 'Morning Ritual',
-};
-
 // ---------------------------------------------------------------------------
 // HELPER FUNCTIONS
 // ---------------------------------------------------------------------------
 
+const toLocalDayNumber = (value) => {
+  const date = typeof value === 'string' ? parseDateKey(value) : new Date(value);
+  return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+};
+
 const getDaysTrained = (startDate, createdAt) => {
-  const base = startDate ? new Date(startDate) : new Date(createdAt);
-  const diff = Date.now() - base.getTime();
-  return Math.max(1, Math.ceil(diff / 86400000));
+  const baseKey = startDate || toLocalDateKey(createdAt || new Date());
+  const diffDays = toLocalDayNumber(todayKey()) - toLocalDayNumber(baseKey);
+  return Math.max(1, diffDays);
 };
 
 const computeGrowthMultiplier = (daysTrained, consistencyPct) => {
@@ -80,12 +79,15 @@ const computeGrowthMultiplier = (daysTrained, consistencyPct) => {
 
 const computeConsistency = (completionLogs, habits, daysTrained) => {
   if (habits.length === 0) return 0;
-  const totalExpected = habits.length * daysTrained;
+  const totalExpected = habits.reduce((sum, habit) => {
+    const weeklyFrequency = habit.target_frequency_per_week ?? (habit.frequency === 'weekly' ? 1 : 7);
+    return sum + Math.max(1, Math.ceil((daysTrained * weeklyFrequency) / 7));
+  }, 0);
   const totalDone = completionLogs.length;
   return Math.min(100, Math.round((totalDone / totalExpected) * 100));
 };
 
-const computeCorruption = (missLogs, relapseLogs, perfectDays, daysTrained) => {
+const computeCorruption = (missLogs, relapseLogs, perfectDays) => {
   let index = 0;
   index += missLogs * 2;
   index += relapseLogs * 15;
@@ -149,28 +151,6 @@ const computeBreathingBalance = (techniques, completionLogs) => {
   return balance;
 };
 
-const computeIdealPath = (daysTrained) => {
-  const points = [];
-  for (let d = 1; d <= daysTrained; d++) {
-    points.push({ day: d, multiplier: +(1.01 ** d).toFixed(3) });
-  }
-  return points;
-};
-
-const computeActualPath = (daysTrained, allLogs, techniques) => {
-  const points = [];
-  for (let d = 1; d <= daysTrained; d++) {
-    const logsUpToDay = allLogs.filter(l => {
-      const logDay = new Date(l.executed_at || l.logged_date);
-      return (Date.now() - logDay.getTime()) / 86400000 <= (daysTrained - d + 1);
-    });
-    const consistency = computeConsistency(logsUpToDay, techniques, d);
-    const multiplier = computeGrowthMultiplier(d, consistency);
-    points.push({ day: d, multiplier });
-  }
-  return points;
-};
-
 // ---------------------------------------------------------------------------
 // STORE
 // ---------------------------------------------------------------------------
@@ -217,7 +197,7 @@ const useGrowthStore = create((set, get) => ({
     });
     const perfectDays = Object.values(groupByDate).filter(c => c >= techniques.length).length;
 
-    const corruptionIndex = computeCorruption(missLogs, relapseLogs, perfectDays, daysTrained);
+    const corruptionIndex = computeCorruption(missLogs, relapseLogs, perfectDays);
     const corruptionLevel = CORRUPTION_LEVELS.find(l => corruptionIndex <= l.maxIndex) || CORRUPTION_LEVELS[5];
     const swordTier = computeSwordTier(daysTrained, consistencyPercent);
     const currentRank = computeRankFromMultiplier(growthMultiplier);
@@ -277,7 +257,7 @@ const useGrowthStore = create((set, get) => ({
     const s = get();
     await supabase.from('growth_snapshots').upsert({
       user_id: userId,
-      snapshot_date: new Date().toISOString().split('T')[0],
+      snapshot_date: todayKey(),
       days_trained: s.daysTrained,
       consistency_percent: s.consistencyPercent,
       growth_multiplier: s.growthMultiplier,

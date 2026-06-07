@@ -1,5 +1,6 @@
 // src/lib/worldState.js
 // Client-side world state + demon computation — no extra DB calls
+import { dateKeyDaysAgo } from './dateKeys';
 
 const DEMON_NAMES = [
   'Gyutaro','Daki','Nakime','Hantengu','Gyokko',
@@ -28,9 +29,7 @@ export const computeActiveDemons = (techniques, allLogs) => {
     let missedStreak = 0;
     // Walk backwards from yesterday (today is still in progress)
     for (let i = 1; i <= 21; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = dateKeyDaysAgo(i);
       const done = allLogs.some(
         (l) => l.technique_id === t.id && l.executed_at === dateStr
       );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { applyElementTheme } from '../lib/worldState';
+import { seededRange } from '../lib/deterministicRandom';
 import {
   Sword, Droplets, Flame, Zap, Wind, Mountain,
   CloudFog, Heart, Waves, Bug, Moon, Sun,
@@ -31,8 +32,17 @@ const CROW_MESSAGES = [
 
 const STEPS = ['welcome', 'breathing', 'sword', 'crow', 'ready'];
 
+const ONBOARDING_PARTICLES = Array.from({ length: 12 }, (_, i) => ({
+  width: `${seededRange(i + 201, 2, 5)}px`,
+  height: `${seededRange(i + 221, 2, 5)}px`,
+  left: `${seededRange(i + 241, 0, 100)}%`,
+  top: `${seededRange(i + 261, 0, 100)}%`,
+  opacity: seededRange(i + 281, 0.15, 0.35),
+  animation: `float ${4 + i}s ease-in-out ${i * 0.5}s infinite`,
+}));
+
 export default function OnboardingFlow({ onComplete }) {
-  const { updateProfile, profile } = useAuthStore();
+  const { updateProfile } = useAuthStore();
   const [step, setStep] = useState(0);
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [crowMsgIdx, setCrowMsgIdx] = useState(0);
@@ -82,18 +92,13 @@ export default function OnboardingFlow({ onComplete }) {
       />
 
       {/* Floating particles */}
-      {Array.from({ length: 12 }).map((_, i) => (
+      {ONBOARDING_PARTICLES.map((particle, i) => (
         <div
           key={i}
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: `${2 + Math.random() * 3}px`,
-            height: `${2 + Math.random() * 3}px`,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
+            ...particle,
             background: selectedColor,
-            opacity: 0.15 + Math.random() * 0.2,
-            animation: `float ${4 + i}s ease-in-out ${i * 0.5}s infinite`,
           }}
         />
       ))}

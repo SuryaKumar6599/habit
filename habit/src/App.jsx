@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { useSecurityStore } from './stores/securityStore';
 import FinalSelectionAuth from './components/FinalSelectionAuth';
@@ -20,9 +20,9 @@ function App() {
   const { user, profile, loading, initialize: initAuth, signOut } = useAuthStore();
   const { initialize: initSecurity } = useSecurityStore();
   const [launchComplete, setLaunchComplete] = useState(false);
-  const [hydrationTimeout, setHydrationTimeout] = useState(false);
-
-  console.log('[App] State:', { loading, hasUser: !!user, hasProfile: !!profile, launchComplete });
+  const [hydrationTimedOutFor, setHydrationTimedOutFor] = useState(null);
+  const userId = user?.id;
+  const hydrationTimeout = hydrationTimedOutFor === userId;
 
   const handleLaunchComplete = useCallback(() => {
     setLaunchComplete(true);
@@ -63,15 +63,13 @@ function App() {
   }, [user, profile]);
 
   useEffect(() => {
-    if (user && !profile && !loading) {
+    if (userId && !profile && !loading) {
       const timer = setTimeout(() => {
-        setHydrationTimeout(true);
+        setHydrationTimedOutFor(userId);
       }, 5000);
       return () => clearTimeout(timer);
-    } else {
-      setHydrationTimeout(false);
     }
-  }, [user, profile, loading]);
+  }, [userId, profile, loading]);
 
   if (loading || (user && !profile && !hydrationTimeout)) {
     return (

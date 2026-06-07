@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { supabase } from '../lib/supabaseClient';
 import { Shield, ChevronRight, Check } from 'lucide-react';
 import useHabitStore from '../stores/habitStore';
+import { todayKey } from '../lib/dateKeys';
+import { seededUnit } from '../lib/deterministicRandom';
 
 const HASHIRA = [
   { name: 'Giyu Tomioka', element: 'Water', quote: "Don't cry. Don't despair. Those things will do you no good.", color: '#3b82f6', glow: 'rgba(59,130,246,0.5)' },
@@ -16,25 +17,29 @@ const HASHIRA = [
   { name: 'Shinobu Kocho', element: 'Insect', quote: "If you can't behead a demon, you must be fast. Let's practice.", color: '#8b5cf6', glow: 'rgba(139,92,246,0.5)' },
 ];
 
+const getHashiraSeed = (userId) => {
+  const seedText = `${userId || 'guest'}-${todayKey()}`;
+  return [...seedText].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+};
+
+const pickHashira = (userId) => {
+  const index = Math.floor(seededUnit(getHashiraSeed(userId)) * HASHIRA.length);
+  return HASHIRA[index];
+};
+
 export default function HashiraTrainingModal({ onClose }) {
   const { user, profile, updateProfile, trackEvent } = useAuthStore();
   const { fetchTodaysLogs } = useHabitStore();
   
-  const [hashira, setHashira] = useState(null);
+  const [hashira] = useState(() => pickHashira(user?.id));
   const [phase, setPhase] = useState('intro'); // intro | reward | done
-  const [loading, setLoading] = useState(true);
   const [rewardClaimed, setRewardClaimed] = useState(false);
 
   useEffect(() => {
-    // Pick a random Hashira
-    const randomHashira = HASHIRA[Math.floor(Math.random() * HASHIRA.length)];
-    setHashira(randomHashira);
-    setLoading(false);
-
     if (user && typeof trackEvent === 'function') {
-      trackEvent('hashira_spawned', 'encounter', 1, { hashira_name: randomHashira.name });
+      trackEvent('hashira_spawned', 'encounter', 1, { hashira_name: hashira.name });
     }
-  }, [user, trackEvent]);
+  }, [user, trackEvent, hashira.name]);
 
   const handleClaimReward = async () => {
     if (!user || rewardClaimed) return;
@@ -66,8 +71,6 @@ export default function HashiraTrainingModal({ onClose }) {
     }
     onClose();
   };
-
-  if (loading || !hashira) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-abyss/90 backdrop-blur-sm animate-fade-in">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Scroll, X } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { getGreeting, getTimeOfDay } from '../lib/greetings';
+import { todayKey } from '../lib/dateKeys';
 
 // --- Mission Generator (client-side, no DB) ---
 const generateMissions = (profile) => {
@@ -62,7 +63,7 @@ function CrowSVG({ style, className }) {
 }
 
 // --- Falling Feather ---
-function Feather({ style }) {
+function Feather({ style, duration }) {
   return (
     <div
       className="absolute pointer-events-none"
@@ -71,7 +72,7 @@ function Feather({ style }) {
         height: 20,
         borderRadius: '50% 50% 50% 50% / 30% 30% 70% 70%',
         background: 'linear-gradient(180deg, rgba(80,60,120,0.6), rgba(40,20,60,0.3))',
-        animation: `feather-fall ${3 + Math.random() * 2}s ease-in forwards`,
+        animation: `feather-fall ${duration} ease-in forwards`,
         ...style,
       }}
     />
@@ -146,9 +147,7 @@ export default function LaunchSequence({ onComplete }) {
     if (didInit.current) return;
     didInit.current = true;
 
-    console.log('[LaunchSequence] Phase:', phase);
-
-    const today = new Date().toDateString();
+    const today = todayKey();
     const seen = localStorage.getItem('launch_seen');
     if (seen === today) {
       onComplete();
@@ -157,7 +156,6 @@ export default function LaunchSequence({ onComplete }) {
 
     // Phase timeline: fly → perch (with feathers) → scroll
     const t1 = setTimeout(() => {
-      console.log('[LaunchSequence] Phase: perch');
       setPhase('perch');
       // Spawn feathers when crow lands
       setFeathers(
@@ -166,12 +164,12 @@ export default function LaunchSequence({ onComplete }) {
           left: `${30 + Math.random() * 40}%`,
           top: `${10 + Math.random() * 20}%`,
           delay: `${i * 150}ms`,
+          duration: `${3 + Math.random() * 2}s`,
         }))
       );
     }, 1600);
 
     const t2 = setTimeout(() => {
-      console.log('[LaunchSequence] Phase: scroll');
       setPhase('scroll');
     }, 3200);
 
@@ -191,7 +189,7 @@ export default function LaunchSequence({ onComplete }) {
   const handleSkip = () => {
     setPhase('wipe');
     setTimeout(() => {
-      localStorage.setItem('launch_seen', new Date().toDateString());
+      localStorage.setItem('launch_seen', todayKey());
       onComplete();
     }, 650);
   };
@@ -246,6 +244,7 @@ export default function LaunchSequence({ onComplete }) {
           {feathers.map((f) => (
             <Feather
               key={f.id}
+              duration={f.duration}
               style={{ left: f.left, top: f.top, animationDelay: f.delay }}
             />
           ))}

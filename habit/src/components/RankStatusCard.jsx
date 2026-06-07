@@ -1,29 +1,13 @@
-import { useAuthStore, getRankInfo, RANK_THRESHOLDS } from '../stores/authStore';
-import useHabitStore from '../stores/habitStore';
-import { Shield, Swords, Heart, TrendingUp, Sparkles } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useAuthStore, getRankInfo } from '../stores/authStore';
+import { Heart, TrendingUp, Sparkles } from 'lucide-react';
 
 export default function RankStatusCard() {
   const { profile } = useAuthStore();
-  const { getTodayProgress } = useHabitStore();
-  const [showRankUp, setShowRankUp] = useState(false);
-  const [prevRank, setPrevRank] = useState(null);
 
   const totalXp = profile?.total_xp || 0;
   const stamina = profile?.current_stamina || 100;
   const maxStamina = profile?.max_stamina || 100;
   const rankInfo = getRankInfo(totalXp);
-  const progress = getTodayProgress();
-
-  // Detect rank-up
-  useEffect(() => {
-    if (prevRank && prevRank !== rankInfo.current.rank) {
-      setShowRankUp(true);
-      const timer = setTimeout(() => setShowRankUp(false), 3000);
-      return () => clearTimeout(timer);
-    }
-    setPrevRank(rankInfo.current.rank);
-  }, [rankInfo.current.rank]);
 
   const staminaPercent = Math.round((stamina / maxStamina) * 100);
   
@@ -53,28 +37,6 @@ export default function RankStatusCard() {
 
   return (
     <div className="glass-card p-5 md:p-6 relative overflow-hidden">
-      {/* Rank-up celebration overlay */}
-      {showRankUp && (
-        <div
-          className="absolute inset-0 z-20 flex items-center justify-center animate-fade-in"
-          style={{
-            background: 'rgba(10,10,18,0.85)',
-            backdropFilter: 'blur(4px)',
-          }}
-        >
-          <div className="text-center animate-rank-up">
-            <Sparkles className="w-10 h-10 mx-auto mb-3" style={{ color: rankColor }} />
-            <p className="text-text-secondary text-xs uppercase tracking-widest mb-1">Rank Promotion</p>
-            <p className="text-3xl font-heading font-extrabold" style={{ color: rankColor }}>
-              {rankInfo.current.rank}
-            </p>
-            <p className="kanji-display text-5xl mt-2" style={{ color: rankColor, opacity: 0.6 }}>
-              {rankInfo.current.kanji}
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Background glow */}
       <div
         className="absolute -top-20 -right-20 w-48 h-48 rounded-full opacity-10 pointer-events-none"

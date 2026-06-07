@@ -6,8 +6,8 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import useHabitStore from '../stores/habitStore';
-import useGrowthStore, { CORRUPTION_LEVELS } from '../stores/growthStore';
-import { Shield, TrendingUp, Swords, Sparkles, Skull, ChevronRight } from 'lucide-react';
+import useGrowthStore from '../stores/growthStore';
+import { TrendingUp, Swords, Sparkles, Skull, ChevronRight } from 'lucide-react';
 
 export default function SlayerStatusDashboard() {
   const { profile, user } = useAuthStore();
@@ -17,7 +17,7 @@ export default function SlayerStatusDashboard() {
     daysTrained, consistencyPercent, growthMultiplier,
     corruptionIndex, corruptionLevel, swordTier,
     currentRank, nextRank, progressToNextRank,
-    archetype, archetypeData,
+    archetypeData,
   } = useGrowthStore();
 
   // Recompute whenever data changes

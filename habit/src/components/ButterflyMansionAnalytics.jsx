@@ -5,7 +5,7 @@
  * Wisteria House, and the legacy heatmap.
  */
 import { useEffect } from 'react';
-import useHabitStore, { BREATHING_ELEMENTS } from '../stores/habitStore';
+import useHabitStore from '../stores/habitStore';
 import { useAuthStore } from '../stores/authStore';
 import { BookOpen } from 'lucide-react';
 
@@ -14,6 +14,7 @@ import BreathingBalanceChart from './BreathingBalanceChart';
 import CorruptionIndex from './CorruptionIndex';
 import WisteriaHouse from './WisteriaHouse';
 import useGrowthStore from '../stores/growthStore';
+import { dateKeyDaysAgo } from '../lib/dateKeys';
 
 export default function ButterflyMansionAnalytics() {
   const { user, profile } = useAuthStore();
@@ -47,11 +48,8 @@ export default function ButterflyMansionAnalytics() {
 
   const generateGrid = () => {
     const grid = [];
-    const today = new Date();
     for (let i = 29; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = dateKeyDaysAgo(i);
       grid.push({ date: dateStr, count: stats.dailyCounts[dateStr] || 0 });
     }
     return grid;

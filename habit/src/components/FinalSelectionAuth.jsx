@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Sword, Shield, Flame, Zap, Wind, Droplets, Eye } from 'lucide-react';
+import { seededRange } from '../lib/deterministicRandom';
+
+const AUTH_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
+  left: `${seededRange(i + 1, 0, 100)}%`,
+  top: `${seededRange(i + 21, 0, 100)}%`,
+  width: `${seededRange(i + 41, 2, 5)}px`,
+  height: `${seededRange(i + 61, 2, 5)}px`,
+  background: ['#dc2626', '#3b82f6', '#f97316', '#eab308', '#22c55e'][i % 5],
+  animation: `float ${seededRange(i + 81, 4, 8)}s ease-in-out ${seededRange(i + 101, 0, 4)}s infinite, fade-in 1s ease-out`,
+  opacity: seededRange(i + 121, 0.2, 0.5),
+}));
 
 export default function FinalSelectionAuth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -37,19 +48,11 @@ export default function FinalSelectionAuth() {
       {/* Background Effects */}
       <div className="particle-field">
         {/* Floating Particles */}
-        {Array.from({ length: 20 }).map((_, i) => (
+        {AUTH_PARTICLES.map((particle, i) => (
           <div
             key={i}
             className="particle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${2 + Math.random() * 3}px`,
-              height: `${2 + Math.random() * 3}px`,
-              background: ['#dc2626', '#3b82f6', '#f97316', '#eab308', '#22c55e'][i % 5],
-              animation: `float ${4 + Math.random() * 4}s ease-in-out ${Math.random() * 4}s infinite, fade-in 1s ease-out`,
-              opacity: 0.2 + Math.random() * 0.3,
-            }}
+            style={particle}
           />
         ))}
         {/* Gradient orbs */}

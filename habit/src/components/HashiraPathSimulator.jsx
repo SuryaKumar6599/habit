@@ -4,7 +4,7 @@
  * future-projection slider. Shows Ideal Path vs Actual Path and
  * projects rank/sword/corruption at 30/90/180/365 days.
  */
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import useGrowthStore, { RANK_THRESHOLDS } from '../stores/growthStore';
 import { TrendingUp, Zap, Target } from 'lucide-react';
 
@@ -84,18 +84,10 @@ function ProjectionCard({ label, data }) {
 export default function HashiraPathSimulator() {
   const {
     idealPath, actualPath, projections,
-    daysTrained, consistencyPercent, growthMultiplier, currentRank,
+    daysTrained, consistencyPercent, growthMultiplier,
   } = useGrowthStore();
 
   const [simConsistency, setSimConsistency] = useState(consistencyPercent);
-
-  // Simulate paths with slider value
-  const simActualPath = useMemo(() => {
-    return idealPath.map(p => ({
-      day: p.day,
-      multiplier: +(1 + Math.log10(p.day + 1) * (0.5 + 0.5 * (simConsistency / 100) ** 2)).toFixed(3),
-    }));
-  }, [idealPath, simConsistency]);
 
   const isAhead = actualPath.length > 0 &&
     actualPath[actualPath.length - 1]?.multiplier >= idealPath[actualPath.length - 1]?.multiplier;

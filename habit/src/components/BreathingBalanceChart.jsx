@@ -11,7 +11,7 @@ import * as LucideIcons from 'lucide-react';
 const CORE_STYLES = ['Water', 'Thunder', 'Flame', 'Stone', 'Wind', 'Mist'];
 
 export default function BreathingBalanceChart() {
-  const { breathingBalance, archetype, archetypeData } = useGrowthStore();
+  const { breathingBalance, archetypeData } = useGrowthStore();
   const { techniques } = useHabitStore();
 
   // Only show styles that have at least 1 habit configured

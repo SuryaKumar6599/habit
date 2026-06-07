@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import useHabitStore, { BREATHING_ELEMENTS } from '../stores/habitStore';
 import { useAuthStore } from '../stores/authStore';
 import { Plus, Flame, Check, Trash2, AlertCircle } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
 import AddTechniqueModal from './AddTechniqueModal';
 import KasugaiCrow from './KasugaiCrow';
 import SwordDurability from './SwordDurability';

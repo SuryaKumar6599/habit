@@ -245,15 +245,49 @@ CREATE OR REPLACE FUNCTION public.generate_daily_missions(target_user_id UUID)
 RETURNS SETOF public.daily_missions AS $$
 DECLARE
   active_missions INTEGER;
+  active_techniques INTEGER;
+  legendary_target INTEGER;
   expire_time TIMESTAMPTZ;
   tech_record RECORD;
 BEGIN
+  SELECT COUNT(*) INTO active_techniques
+  FROM public.breathing_techniques
+  WHERE user_id = target_user_id AND is_active = true;
+
   -- 1. Check existing unexpired missions
   SELECT COUNT(*) INTO active_missions
   FROM public.daily_missions
   WHERE user_id = target_user_id AND expires_at > now();
 
   IF active_missions > 0 THEN
+    -- Clamp old generated missions so they remain possible with one completion per form per day.
+    UPDATE public.daily_missions
+    SET title = CASE
+          WHEN active_techniques = 0 AND mission_type = 'any_form' THEN 'Hold Total Concentration'
+          ELSE title
+        END,
+        mission_type = CASE
+          WHEN active_techniques = 0 AND mission_type = 'any_form' THEN 'focus_session'
+          ELSE mission_type
+        END,
+        target_technique_id = CASE
+          WHEN active_techniques = 0 AND mission_type = 'any_form' THEN NULL
+          ELSE target_technique_id
+        END,
+        target_count = CASE
+          WHEN mission_type = 'specific_form' THEN 1
+          WHEN mission_type = 'any_form' THEN GREATEST(1, LEAST(target_count, GREATEST(active_techniques, 1)))
+          WHEN mission_type = 'focus_session' THEN 1
+          ELSE target_count
+        END,
+        current_count = LEAST(current_count, CASE
+          WHEN mission_type = 'specific_form' THEN 1
+          WHEN mission_type = 'any_form' THEN GREATEST(1, LEAST(target_count, GREATEST(active_techniques, 1)))
+          WHEN mission_type = 'focus_session' THEN 1
+          ELSE target_count
+        END)
+    WHERE user_id = target_user_id AND expires_at > now();
+
     RETURN QUERY SELECT * FROM public.daily_missions WHERE user_id = target_user_id AND expires_at > now() ORDER BY created_at ASC;
     RETURN;
   END IF;
@@ -265,19 +299,25 @@ BEGIN
   SELECT * INTO tech_record FROM public.breathing_techniques WHERE user_id = target_user_id AND is_active = true ORDER BY RANDOM() LIMIT 1;
   IF FOUND THEN
     INSERT INTO public.daily_missions (user_id, title, mission_type, target_technique_id, target_count, reward_xp, rarity, expires_at)
-    VALUES (target_user_id, 'Execute ' || tech_record.form_name, 'specific_form', tech_record.id, 3, 10, 'Common', expire_time);
+    VALUES (target_user_id, 'Execute ' || tech_record.form_name, 'specific_form', tech_record.id, 1, 10, 'Common', expire_time);
   ELSE
     INSERT INTO public.daily_missions (user_id, title, mission_type, target_count, reward_xp, rarity, expires_at)
-    VALUES (target_user_id, 'Execute Any Form', 'any_form', 3, 10, 'Common', expire_time);
+    VALUES (target_user_id, 'Complete Your First Encounter', 'focus_session', 1, 10, 'Common', expire_time);
   END IF;
 
   -- RARE: Focus Session
   INSERT INTO public.daily_missions (user_id, title, mission_type, target_count, reward_xp, rarity, expires_at)
-  VALUES (target_user_id, 'Total Concentration Breathing', 'focus_session', 2, 50, 'Rare', expire_time);
+  VALUES (target_user_id, 'Total Concentration Breathing', 'focus_session', 1, 50, 'Rare', expire_time);
 
-  -- LEGENDARY: General consistency (e.g., execute any 10 forms)
-  INSERT INTO public.daily_missions (user_id, title, mission_type, target_count, reward_xp, rarity, expires_at)
-  VALUES (target_user_id, 'Push Past Your Limits', 'any_form', 10, 100, 'Legendary', expire_time);
+  -- LEGENDARY: General consistency, capped by today's possible active forms
+  IF active_techniques > 0 THEN
+    legendary_target := LEAST(active_techniques, 3);
+    INSERT INTO public.daily_missions (user_id, title, mission_type, target_count, reward_xp, rarity, expires_at)
+    VALUES (target_user_id, 'Push Past Your Limits', 'any_form', legendary_target, 100, 'Legendary', expire_time);
+  ELSE
+    INSERT INTO public.daily_missions (user_id, title, mission_type, target_count, reward_xp, rarity, expires_at)
+    VALUES (target_user_id, 'Hold Total Concentration', 'focus_session', 1, 100, 'Legendary', expire_time);
+  END IF;
 
   -- 3. Return newly created missions
   RETURN QUERY SELECT * FROM public.daily_missions WHERE user_id = target_user_id AND expires_at > now() ORDER BY created_at ASC;

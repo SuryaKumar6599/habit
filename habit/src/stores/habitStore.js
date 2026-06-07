@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabaseClient';
 import { useAuthStore, getRankInfo } from './authStore';
+import { dateKeyDaysAgo, previousDateKey, todayKey } from '../lib/dateKeys';
 
 const BREATHING_ELEMENTS = {
   Water:   { color: '#3b82f6', bg: 'bg-blue-500',   label: 'Water Breathing',   icon: 'Droplets' },
@@ -17,7 +18,29 @@ const BREATHING_ELEMENTS = {
   Sun:     { color: '#fbbf24', bg: 'bg-amber-400',  label: 'Sun Breathing',     icon: 'Sun' },
 };
 
-const getToday = () => new Date().toISOString().split('T')[0];
+const getToday = () => todayKey();
+
+const getLogDate = (log) => log.executed_at || log.logged_date;
+const getLogTechniqueId = (log) => log.technique_id || log.habit_id;
+const isCompletionLog = (log) => !log.activity_type || log.activity_type === 'completion';
+
+const getTechniqueStreakFromLogs = (techniqueId, logs, dateKey) => {
+  const completedDates = new Set(
+    logs
+      .filter((log) => isCompletionLog(log) && getLogTechniqueId(log) === techniqueId)
+      .map(getLogDate)
+      .filter(Boolean)
+  );
+
+  let cursor = completedDates.has(dateKey) ? dateKey : previousDateKey(dateKey);
+  let streak = 0;
+  while (completedDates.has(cursor)) {
+    streak += 1;
+    cursor = previousDateKey(cursor);
+  }
+
+  return streak;
+};
 
 const normalizeActivityLog = (log) => ({
   ...log,
@@ -83,7 +106,6 @@ const useHabitStore = create(
         const { pending_actions } = get();
         if (pending_actions.length === 0 || !window.navigator.onLine) return;
         
-        console.log('Syncing offline actions...', pending_actions.length);
         const remaining = [];
         
         for (const action of pending_actions) {
@@ -147,9 +169,7 @@ const useHabitStore = create(
       },
 
       fetchAllLogs: async (userId) => {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const fromDate = thirtyDaysAgo.toISOString().split('T')[0];
+        const fromDate = dateKeyDaysAgo(30);
 
         try {
           const [legacyResult, activityResult] = await Promise.all([
@@ -222,16 +242,20 @@ const useHabitStore = create(
       },
 
       executeForm: async (techniqueId, userId, forcedDate = null) => {
-        const { todaysLogs, techniques, pending_actions } = get();
+        const { todaysLogs, allLogs, techniques, pending_actions } = get();
         const today = forcedDate || getToday();
+        const logsBeforeCompletion = mergeLogs(allLogs, todaysLogs);
 
-        const alreadyDone = todaysLogs.find((l) => l.technique_id === techniqueId && l.executed_at === today);
+        const alreadyDone = logsBeforeCompletion.find((log) =>
+          isCompletionLog(log) && getLogTechniqueId(log) === techniqueId && getLogDate(log) === today
+        );
         if (alreadyDone) return { alreadyDone: true };
 
         const technique = techniques.find((t) => t.id === techniqueId);
         if (!technique) return { error: 'Technique not found' };
 
-        const streakBonus = Math.min(technique.streak_count, 20);
+        const currentTechniqueStreak = getTechniqueStreakFromLogs(techniqueId, logsBeforeCompletion, today);
+        const streakBonus = Math.min(currentTechniqueStreak, 20);
         const xpGained = 10 + streakBonus;
 
         if (!window.navigator.onLine && !forcedDate) {
@@ -265,7 +289,9 @@ const useHabitStore = create(
             created_at: logData.created_at,
           });
 
-          const newStreak = technique.streak_count + 1;
+          const completedLog = activityLog || logData;
+          const logsAfterCompletion = mergeLogs(logsBeforeCompletion, completedLog);
+          const newStreak = getTechniqueStreakFromLogs(techniqueId, logsAfterCompletion, today);
           const { error: techError } = await supabase
             .from('breathing_techniques')
             .update({ streak_count: newStreak })
@@ -286,10 +312,17 @@ const useHabitStore = create(
             const rankChanged = profile.slayer_rank !== rankInfo.current.rank;
 
             const newRelationship = Math.min((profile.crow_relationship ?? 50) + 2, 100);
-            const newProfileStreak = (profile.current_streak ?? 0) + 1;
+            const completionLogsBefore = logsBeforeCompletion.filter(isCompletionLog);
+            const hadCompletionToday = completionLogsBefore.some((log) => getLogDate(log) === today);
+            const hadCompletionYesterday = completionLogsBefore.some((log) => getLogDate(log) === previousDateKey(today));
+            const newProfileStreak = hadCompletionToday
+              ? (profile.current_streak ?? 0)
+              : hadCompletionYesterday
+              ? (profile.current_streak ?? 0) + 1
+              : 1;
             const newMaxStreak = Math.max(profile.max_streak ?? 0, newProfileStreak);
 
-            const profileResult = await authStore.updateProfile({
+            const profileUpdates = {
               total_xp: newXp,
               current_stamina: newStamina,
               slayer_rank: rankInfo.current.rank,
@@ -297,9 +330,14 @@ const useHabitStore = create(
               crow_status: 'Happy',
               crow_relationship: newRelationship,
               crow_last_interaction: new Date().toISOString(),
-              current_streak: newProfileStreak,
-              max_streak: newMaxStreak,
-            });
+            };
+
+            if (today === getToday()) {
+              profileUpdates.current_streak = newProfileStreak;
+              profileUpdates.max_streak = newMaxStreak;
+            }
+
+            const profileResult = await authStore.updateProfile(profileUpdates);
             
             if (profileResult?.error) throw new Error(profileResult.error);
 
@@ -307,8 +345,8 @@ const useHabitStore = create(
             await authStore.trackEvent('habit_completed', 'habit', xpGained, { techniqueId, element: technique.breathing_element });
 
             set((state) => ({
-              todaysLogs: mergeLogs(state.todaysLogs, activityLog || logData),
-              allLogs: mergeLogs(state.allLogs, activityLog || logData),
+              todaysLogs: mergeLogs(state.todaysLogs, completedLog),
+              allLogs: mergeLogs(state.allLogs, completedLog),
               techniques: state.techniques.map((t) =>
                 t.id === techniqueId ? { ...t, streak_count: newStreak } : t
               ),

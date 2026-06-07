@@ -70,7 +70,7 @@ export default function DemonEncounter() {
         }
       });
     }
-  }, [status]);
+  }, [status, user, finishEncounter, selectedDuration.value]);
 
   const handleStart = () => {
     setStatus(STATUS.RUNNING);
