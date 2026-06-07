@@ -378,6 +378,268 @@
     background: var(--color-crimson);
     opacity: 0.3;
   }
+
+  .breathing-effect {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background:
+      linear-gradient(115deg, rgba(5, 5, 8, 0.58), rgba(10, 10, 18, 0.1) 45%, rgba(5, 5, 8, 0.42)),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 28px);
+    animation: breathing-effect-fade 2.2s ease-out forwards;
+  }
+
+  .breathing-effect__field {
+    position: relative;
+    width: min(82vw, 560px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    transform-style: preserve-3d;
+  }
+
+  .breathing-effect__ring {
+    position: absolute;
+    inset: 16%;
+    border: 1px solid color-mix(in srgb, var(--effect-color), transparent 28%);
+    border-radius: 999px;
+    box-shadow: 0 0 38px var(--effect-glow), inset 0 0 42px color-mix(in srgb, var(--effect-color), transparent 78%);
+    animation: breathing-ring-spin 1.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .breathing-effect__ring--outer {
+    inset: 5%;
+    border-style: dashed;
+    opacity: 0.7;
+    animation-duration: 2.05s;
+  }
+
+  .breathing-effect__ring--inner {
+    inset: 24%;
+    animation-direction: reverse;
+  }
+
+  .breathing-effect__swirl {
+    position: absolute;
+    width: 72%;
+    height: 22%;
+    border-radius: 999px;
+    background:
+      linear-gradient(90deg, transparent, color-mix(in srgb, var(--effect-color), white 18%), transparent),
+      radial-gradient(ellipse at center, var(--effect-glow), transparent 65%);
+    filter: blur(1px);
+    mix-blend-mode: screen;
+    transform-origin: center;
+    animation: breathing-swirl 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .breathing-effect__swirl--one {
+    transform: rotate(15deg);
+  }
+
+  .breathing-effect__swirl--two {
+    width: 82%;
+    transform: rotate(132deg);
+    animation-delay: 70ms;
+  }
+
+  .breathing-effect__swirl--three {
+    width: 62%;
+    transform: rotate(248deg);
+    animation-delay: 130ms;
+  }
+
+  .breathing-effect__slash {
+    position: absolute;
+    width: 76%;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, white, var(--effect-color), transparent);
+    box-shadow: 0 0 22px var(--effect-color);
+    transform-origin: center;
+    animation: breathing-slash 1.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .breathing-effect__slash--one {
+    transform: rotate(-34deg) translateX(-18%);
+  }
+
+  .breathing-effect__slash--two {
+    transform: rotate(22deg) translateX(12%);
+    animation-delay: 110ms;
+  }
+
+  .breathing-effect__slash--three {
+    width: 48%;
+    transform: rotate(86deg) translateY(-38%);
+    animation-delay: 190ms;
+  }
+
+  .breathing-effect__seal {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: min(86vw, 430px);
+    padding: 1rem 1.15rem;
+    border: 1px solid color-mix(in srgb, var(--effect-color), transparent 45%);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(10, 10, 18, 0.88), rgba(18, 18, 30, 0.72));
+    box-shadow: 0 18px 70px rgba(0, 0, 0, 0.55), 0 0 40px var(--effect-glow);
+    animation: breathing-seal-rise 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .breathing-effect__icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    color: var(--effect-color);
+    filter: drop-shadow(0 0 12px var(--effect-color));
+    flex-shrink: 0;
+  }
+
+  .breathing-effect__eyebrow {
+    color: var(--effect-color);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .breathing-effect__title {
+    margin-top: 0.12rem;
+    color: var(--color-text-primary);
+    font-size: clamp(1.45rem, 5vw, 2.55rem);
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .breathing-effect__caption {
+    margin-top: 0.45rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--color-text-secondary);
+    font-size: 0.86rem;
+  }
+
+  .breathing-crow {
+    position: absolute;
+    left: -28%;
+    top: 15%;
+    width: min(28vw, 170px);
+    color: var(--effect-color);
+    filter: drop-shadow(0 0 18px var(--effect-color));
+    animation: breathing-crow-flight 1.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    z-index: 4;
+  }
+
+  .breathing-crow__body {
+    width: 100%;
+    display: block;
+  }
+
+  .breathing-crow__feather {
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    color: var(--effect-color);
+    opacity: 0;
+    animation: breathing-feather-drop 1.4s ease-out forwards;
+  }
+
+  .breathing-crow__feather--one {
+    left: 22%;
+    top: 66%;
+    animation-delay: 220ms;
+  }
+
+  .breathing-crow__feather--two {
+    left: 44%;
+    top: 78%;
+    animation-delay: 390ms;
+  }
+
+  .breathing-effect--water .breathing-effect__swirl {
+    border: 1px solid rgba(147, 197, 253, 0.42);
+  }
+
+  .breathing-effect--flame .breathing-effect__swirl,
+  .breathing-effect--sun .breathing-effect__swirl {
+    clip-path: polygon(0 52%, 12% 20%, 22% 58%, 34% 10%, 48% 55%, 62% 18%, 75% 60%, 90% 24%, 100% 50%, 90% 76%, 0 70%);
+  }
+
+  .breathing-effect--thunder .breathing-effect__slash {
+    clip-path: polygon(0 45%, 42% 45%, 36% 0, 72% 50%, 54% 50%, 64% 100%, 0 55%);
+  }
+
+  .breathing-effect--stone .breathing-effect__ring {
+    border-radius: 10px;
+    transform: rotate(45deg);
+  }
+
+  .breathing-effect--mist .breathing-effect__swirl {
+    filter: blur(9px);
+    opacity: 0.75;
+  }
+
+  .breathing-effect--moon .breathing-effect__ring--inner,
+  .breathing-effect--serpent .breathing-effect__ring--inner {
+    border-radius: 55% 45% 60% 40%;
+  }
+
+  .breathing-effect--love .breathing-effect__swirl,
+  .breathing-effect--insect .breathing-effect__swirl {
+    height: 16%;
+  }
+}
+
+@keyframes breathing-effect-fade {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes breathing-ring-spin {
+  0% { transform: rotate(-35deg) scale(0.55); opacity: 0; }
+  42% { opacity: 1; }
+  100% { transform: rotate(320deg) scale(1.18); opacity: 0; }
+}
+
+@keyframes breathing-swirl {
+  0% { opacity: 0; transform: rotate(var(--start-rotation, 0deg)) scaleX(0.2); }
+  40% { opacity: 0.95; }
+  100% { opacity: 0; transform: rotate(420deg) scaleX(1.18); }
+}
+
+@keyframes breathing-slash {
+  0% { opacity: 0; filter: blur(8px); }
+  24% { opacity: 1; filter: blur(0); }
+  100% { opacity: 0; filter: blur(5px); }
+}
+
+@keyframes breathing-seal-rise {
+  0% { opacity: 0; transform: translateY(20px) scale(0.92); }
+  20% { opacity: 1; }
+  78% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-14px) scale(0.98); }
+}
+
+@keyframes breathing-crow-flight {
+  0% { opacity: 0; transform: translateX(0) translateY(28px) rotate(-8deg); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(136vw) translateY(-72px) rotate(8deg); }
+}
+
+@keyframes breathing-feather-drop {
+  0% { opacity: 0; transform: translateY(0) rotate(0deg); }
+  25% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(54px) rotate(130deg); }
 }
 
 /* ============================================
@@ -463,4 +725,3 @@ input[type='range']::-webkit-slider-thumb:hover {
 .wisteria-token-active {
   animation: ward-pulse 2s ease-in-out infinite;
 }
-

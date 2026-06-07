@@ -10,6 +10,7 @@ import HashiraTrainingModal from './HashiraTrainingModal';
 import { computeActiveDemons } from '../lib/worldState';
 import { supabase } from '../lib/supabaseClient';
 import DailyMissions from './DailyMissions';
+import BreathingEffect from './BreathingEffect';
 
 export default function TrainingDashboard() {
   const { user, trackEvent } = useAuthStore();
@@ -31,7 +32,9 @@ export default function TrainingDashboard() {
   const [rippleId, setRippleId] = useState(null);
   const [toast, setToast] = useState(null);
   const [showHashiraModal, setShowHashiraModal] = useState(false);
+  const [completionEffect, setCompletionEffect] = useState(null);
   const toastTimer = useRef(null);
+  const effectTimer = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -53,7 +56,10 @@ export default function TrainingDashboard() {
       };
       checkHashira();
     }
-    return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      if (effectTimer.current) clearTimeout(effectTimer.current);
+    };
   }, [user, fetchTechniques, fetchTodaysLogs, fetchAllLogs, markSessionOpen, trackEvent]);
 
   const activeDemons = computeActiveDemons(techniques, allLogs);
@@ -65,6 +71,7 @@ export default function TrainingDashboard() {
   }, []);
 
   const handleExecute = async (techniqueId) => {
+    const technique = techniques.find((t) => t.id === techniqueId);
     setExecutingId(techniqueId);
     setRippleId(techniqueId);
     const result = await executeForm(techniqueId, user.id);
@@ -76,6 +83,22 @@ export default function TrainingDashboard() {
       showToast(`⚠️ Failed to save: ${result.error}`);
     } else if (result?.queued) {
       showToast('📡 Offline — habit queued for sync', 'warn');
+      setCompletionEffect({
+        id: `${techniqueId}-${Date.now()}`,
+        element: technique?.breathing_element || 'Water',
+        techniqueName: technique?.form_name || 'Queued Form',
+      });
+    } else if (!result?.alreadyDone) {
+      setCompletionEffect({
+        id: `${techniqueId}-${Date.now()}`,
+        element: technique?.breathing_element || 'Water',
+        techniqueName: technique?.form_name || 'Completed Form',
+      });
+    }
+
+    if (!result?.error && !result?.alreadyDone) {
+      if (effectTimer.current) clearTimeout(effectTimer.current);
+      effectTimer.current = setTimeout(() => setCompletionEffect(null), 2200);
     }
   };
 
@@ -91,6 +114,8 @@ export default function TrainingDashboard() {
 
   return (
     <div className="animate-fade-in pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <BreathingEffect key={completionEffect?.id} effect={completionEffect} />
+
       {/* Toast notification */}
       {toast && (
         <div
