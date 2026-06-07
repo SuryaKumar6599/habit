@@ -5,6 +5,11 @@
 -- 0. Clean up existing tables and triggers (to prevent "already exists" errors)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP TABLE IF EXISTS public.hashira_exams CASCADE;
+DROP TABLE IF EXISTS public.growth_snapshots CASCADE;
+DROP TABLE IF EXISTS public.activity_logs CASCADE;
+DROP TABLE IF EXISTS public.habits CASCADE;
+DROP TABLE IF EXISTS public.daily_missions CASCADE;
 DROP TABLE IF EXISTS public.encounter_logs CASCADE;
 DROP TABLE IF EXISTS public.slayer_logs CASCADE;
 DROP TABLE IF EXISTS public.breathing_techniques CASCADE;
@@ -368,7 +373,7 @@ CREATE TRIGGER on_encounter_log_insert
 -- ==========================================
 
 -- 1. Create habits table (Supersedes breathing_techniques)
-CREATE TABLE public.habits (
+CREATE TABLE IF NOT EXISTS public.habits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -380,10 +385,11 @@ CREATE TABLE public.habits (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own habits" ON public.habits;
 CREATE POLICY "Users can manage own habits" ON public.habits FOR ALL USING (auth.uid() = user_id);
 
 -- 2. Create activity_logs table (Supersedes slayer_logs and encounter_logs)
-CREATE TABLE public.activity_logs (
+CREATE TABLE IF NOT EXISTS public.activity_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   habit_id UUID REFERENCES public.habits(id) ON DELETE CASCADE,
@@ -393,10 +399,11 @@ CREATE TABLE public.activity_logs (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own activity logs" ON public.activity_logs;
 CREATE POLICY "Users can manage own activity logs" ON public.activity_logs FOR ALL USING (auth.uid() = user_id);
 
 -- 3. Create growth_snapshots table
-CREATE TABLE public.growth_snapshots (
+CREATE TABLE IF NOT EXISTS public.growth_snapshots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   snapshot_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -410,6 +417,7 @@ CREATE TABLE public.growth_snapshots (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE public.growth_snapshots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own snapshots" ON public.growth_snapshots;
 CREATE POLICY "Users can view own snapshots" ON public.growth_snapshots FOR SELECT USING (auth.uid() = user_id);
 
 -- 4. Initial Migration Logic (Non-breaking mapping)
@@ -462,6 +470,7 @@ CREATE TABLE IF NOT EXISTS public.hashira_exams (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE public.hashira_exams ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own exams" ON public.hashira_exams;
 CREATE POLICY "Users can manage own exams" ON public.hashira_exams
   FOR ALL USING (auth.uid() = user_id);
 
