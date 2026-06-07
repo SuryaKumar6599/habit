@@ -19,6 +19,51 @@ const BREATHING_ELEMENTS = {
 
 const getToday = () => new Date().toISOString().split('T')[0];
 
+const normalizeActivityLog = (log) => ({
+  ...log,
+  technique_id: log.habit_id,
+  executed_at: log.logged_date,
+  xp_gained: log.value,
+});
+
+const mergeLogs = (...groups) => {
+  const logsById = new Map();
+  groups.flat().filter(Boolean).forEach((log) => {
+    const normalized = log.activity_type ? normalizeActivityLog(log) : log;
+    logsById.set(normalized.id, { ...logsById.get(normalized.id), ...normalized });
+  });
+  return [...logsById.values()];
+};
+
+const mirrorHabit = async (technique) => {
+  const { error } = await supabase.from('habits').upsert({
+    id: technique.id,
+    user_id: technique.user_id,
+    name: technique.form_name,
+    breathing_technique: technique.breathing_element,
+    category: technique.breathing_element,
+    target_frequency_per_week: technique.frequency === 'daily' ? 7 : 1,
+    is_active: technique.is_active ?? true,
+    created_at: technique.created_at,
+  });
+
+  if (error) console.warn('Could not mirror technique to habits:', error.message);
+};
+
+const mirrorActivityLog = async (activity) => {
+  const { data, error } = await supabase
+    .from('activity_logs')
+    .upsert(activity)
+    .select()
+    .single();
+
+  if (error) {
+    console.warn('Could not mirror activity log:', error.message);
+    return null;
+  }
+  return normalizeActivityLog(data);
+};
+
 const useHabitStore = create(
   persist(
     (set, get) => ({
@@ -78,14 +123,24 @@ const useHabitStore = create(
       fetchTodaysLogs: async (userId) => {
         const today = getToday();
         try {
-          const { data, error } = await supabase
-            .from('slayer_logs')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('executed_at', today);
+          const [legacyResult, activityResult] = await Promise.all([
+            supabase
+              .from('slayer_logs')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('executed_at', today),
+            supabase
+              .from('activity_logs')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('activity_type', 'completion')
+              .eq('logged_date', today),
+          ]);
 
-          if (error) throw error;
-          set({ todaysLogs: data || [] });
+          if (legacyResult.error && activityResult.error) throw legacyResult.error;
+          if (legacyResult.error) console.warn('Could not fetch legacy logs:', legacyResult.error.message);
+          if (activityResult.error) console.warn('Could not fetch activity logs:', activityResult.error.message);
+          set({ todaysLogs: mergeLogs(legacyResult.data || [], activityResult.data || []) });
         } catch (error) {
           console.error('Error fetching logs:', error);
         }
@@ -97,15 +152,25 @@ const useHabitStore = create(
         const fromDate = thirtyDaysAgo.toISOString().split('T')[0];
 
         try {
-          const { data, error } = await supabase
-            .from('slayer_logs')
-            .select('*')
-            .eq('user_id', userId)
-            .gte('executed_at', fromDate)
-            .order('executed_at', { ascending: true });
+          const [legacyResult, activityResult] = await Promise.all([
+            supabase
+              .from('slayer_logs')
+              .select('*')
+              .eq('user_id', userId)
+              .gte('executed_at', fromDate)
+              .order('executed_at', { ascending: true }),
+            supabase
+              .from('activity_logs')
+              .select('*')
+              .eq('user_id', userId)
+              .gte('logged_date', fromDate)
+              .order('logged_date', { ascending: true }),
+          ]);
 
-          if (error) throw error;
-          set({ allLogs: data || [] });
+          if (legacyResult.error && activityResult.error) throw legacyResult.error;
+          if (legacyResult.error) console.warn('Could not fetch legacy logs:', legacyResult.error.message);
+          if (activityResult.error) console.warn('Could not fetch activity logs:', activityResult.error.message);
+          set({ allLogs: mergeLogs(legacyResult.data || [], activityResult.data || []) });
         } catch (error) {
           console.error('Error fetching all logs:', error);
         }
@@ -126,6 +191,7 @@ const useHabitStore = create(
             .single();
 
           if (error) throw error;
+          await mirrorHabit(data);
           set((state) => ({ techniques: [...state.techniques, data] }));
           return { data };
         } catch (error) {
@@ -144,6 +210,8 @@ const useHabitStore = create(
             .single();
 
           if (error) throw error;
+          const technique = get().techniques.find((t) => t.id === techniqueId);
+          if (technique) await mirrorHabit({ ...technique, is_active: false });
           set((state) => ({
             techniques: state.techniques.filter((t) => t.id !== techniqueId),
           }));
@@ -187,6 +255,16 @@ const useHabitStore = create(
 
           if (logError) throw logError;
 
+          const activityLog = await mirrorActivityLog({
+            id: logData.id,
+            user_id: userId,
+            habit_id: techniqueId,
+            activity_type: 'completion',
+            value: xpGained,
+            logged_date: today,
+            created_at: logData.created_at,
+          });
+
           const newStreak = technique.streak_count + 1;
           const { error: techError } = await supabase
             .from('breathing_techniques')
@@ -229,7 +307,8 @@ const useHabitStore = create(
             await authStore.trackEvent('habit_completed', 'habit', xpGained, { techniqueId, element: technique.breathing_element });
 
             set((state) => ({
-              todaysLogs: [...state.todaysLogs, logData],
+              todaysLogs: mergeLogs(state.todaysLogs, activityLog || logData),
+              allLogs: mergeLogs(state.allLogs, activityLog || logData),
               techniques: state.techniques.map((t) =>
                 t.id === techniqueId ? { ...t, streak_count: newStreak } : t
               ),
@@ -276,7 +355,7 @@ const useHabitStore = create(
         }
 
         try {
-          const { error } = await supabase
+          const { data: encounterData, error } = await supabase
             .from('encounter_logs')
             .insert({
               user_id: userId,
@@ -287,6 +366,18 @@ const useHabitStore = create(
             .single();
 
           if (error) throw error;
+
+          const activityLog = await mirrorActivityLog({
+            id: encounterData.id,
+            user_id: userId,
+            activity_type: 'focus_session',
+            value: durationMinutes,
+            logged_date: today,
+            created_at: encounterData.completed_at,
+          });
+          if (activityLog) {
+            set((state) => ({ allLogs: mergeLogs(state.allLogs, activityLog) }));
+          }
 
           const authStore = useAuthStore.getState();
           const profile = authStore.profile;
