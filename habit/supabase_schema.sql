@@ -322,3 +322,161 @@ DROP TRIGGER IF EXISTS on_encounter_log_insert ON public.encounter_logs;
 CREATE TRIGGER on_encounter_log_insert
   AFTER INSERT ON public.encounter_logs
   FOR EACH ROW EXECUTE FUNCTION public.update_mission_progress();
+
+-- ==========================================
+-- TOTAL CONCENTRATION GROWTH SYSTEM (PHASE 1)
+-- ==========================================
+
+-- 1. Create habits table (Supersedes breathing_techniques)
+CREATE TABLE public.habits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  breathing_technique TEXT NOT NULL DEFAULT 'Water Breathing',
+  category TEXT DEFAULT 'Reading',
+  weight INTEGER DEFAULT 1,
+  target_frequency_per_week INTEGER DEFAULT 7,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own habits" ON public.habits FOR ALL USING (auth.uid() = user_id);
+
+-- 2. Create activity_logs table (Supersedes slayer_logs and encounter_logs)
+CREATE TABLE public.activity_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  habit_id UUID REFERENCES public.habits(id) ON DELETE CASCADE,
+  activity_type TEXT NOT NULL CHECK (activity_type IN ('completion', 'miss', 'relapse', 'wisteria_rest', 'focus_session', 'workout')),
+  value NUMERIC,
+  logged_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own activity logs" ON public.activity_logs FOR ALL USING (auth.uid() = user_id);
+
+-- 3. Create growth_snapshots table
+CREATE TABLE public.growth_snapshots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  snapshot_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  days_trained INTEGER DEFAULT 0,
+  consistency_percent NUMERIC DEFAULT 0,
+  growth_multiplier NUMERIC DEFAULT 1.0,
+  corruption_index NUMERIC DEFAULT 0,
+  snapshot_rank TEXT DEFAULT 'Recruit',
+  snapshot_sword_tier TEXT DEFAULT 'Wooden Sword',
+  snapshot_breathing_balance JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.growth_snapshots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own snapshots" ON public.growth_snapshots FOR SELECT USING (auth.uid() = user_id);
+
+-- 4. Initial Migration Logic (Non-breaking mapping)
+-- This creates habits from existing breathing_techniques
+INSERT INTO public.habits (id, user_id, name, breathing_technique, target_frequency_per_week, created_at)
+SELECT id, user_id, form_name, breathing_element, CASE WHEN frequency = 'daily' THEN 7 ELSE 1 END, created_at
+FROM public.breathing_techniques
+ON CONFLICT DO NOTHING;
+
+-- Map slayer_logs to activity_logs
+INSERT INTO public.activity_logs (id, user_id, habit_id, activity_type, value, logged_date, created_at)
+SELECT id, user_id, technique_id, 'completion', xp_gained, executed_at, created_at
+FROM public.slayer_logs
+ON CONFLICT DO NOTHING;
+
+-- Map encounter_logs to activity_logs
+INSERT INTO public.activity_logs (id, user_id, activity_type, value, logged_date, created_at)
+SELECT id, user_id, 'focus_session', duration_minutes, completed_at::date, completed_at
+FROM public.encounter_logs
+ON CONFLICT DO NOTHING;
+
+-- 5. Add new RPG fields to Profiles
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS start_date DATE DEFAULT CURRENT_DATE,
+ADD COLUMN IF NOT EXISTS growth_multiplier NUMERIC DEFAULT 1.0,
+ADD COLUMN IF NOT EXISTS consistency_percent NUMERIC DEFAULT 0,
+ADD COLUMN IF NOT EXISTS corruption_index NUMERIC DEFAULT 0,
+ADD COLUMN IF NOT EXISTS sword_tier TEXT DEFAULT 'Wooden Sword',
+ADD COLUMN IF NOT EXISTS archetype TEXT DEFAULT 'Unassigned',
+ADD COLUMN IF NOT EXISTS resonance_level INTEGER DEFAULT 1;
+
+-- 6. Wisteria House Recovery System
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS wisteria_tokens INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS wisteria_active BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS wisteria_end_date DATE,
+ADD COLUMN IF NOT EXISTS wisteria_last_earned DATE;
+
+-- 7. Hashira Exam System
+CREATE TABLE IF NOT EXISTS public.hashira_exams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  target_rank TEXT NOT NULL,
+  started_at DATE NOT NULL DEFAULT CURRENT_DATE,
+  expires_at DATE NOT NULL,
+  required_consistency INTEGER NOT NULL DEFAULT 90,
+  required_days INTEGER NOT NULL DEFAULT 7,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'passed', 'failed', 'cooldown')),
+  cooldown_until DATE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.hashira_exams ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own exams" ON public.hashira_exams
+  FOR ALL USING (auth.uid() = user_id);
+
+-- 8. Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON public.activity_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON public.activity_logs(logged_date);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON public.activity_logs(activity_type);
+CREATE INDEX IF NOT EXISTS idx_growth_snapshots_user ON public.growth_snapshots(user_id);
+CREATE INDEX IF NOT EXISTS idx_growth_snapshots_date ON public.growth_snapshots(snapshot_date);
+CREATE INDEX IF NOT EXISTS idx_habits_user ON public.habits(user_id);
+
+-- 9. Function: Award Wisteria token if user has 14 days >= 80% consistency
+CREATE OR REPLACE FUNCTION public.check_wisteria_eligibility(target_user_id UUID)
+RETURNS VOID AS $$
+DECLARE
+  recent_consistency NUMERIC;
+  tokens INTEGER;
+  last_earned DATE;
+BEGIN
+  SELECT wisteria_tokens, wisteria_last_earned
+  INTO tokens, last_earned
+  FROM public.profiles WHERE id = target_user_id;
+
+  -- Only check if < 3 tokens and not earned in last 14 days
+  IF tokens >= 3 THEN RETURN; END IF;
+  IF last_earned IS NOT NULL AND last_earned > (CURRENT_DATE - 14) THEN RETURN; END IF;
+
+  -- Check last 14 days' activity_logs completion rate
+  SELECT
+    ROUND(
+      COUNT(CASE WHEN activity_type = 'completion' THEN 1 END)::NUMERIC /
+      NULLIF(COUNT(CASE WHEN activity_type IN ('completion','miss') THEN 1 END), 0) * 100
+    )
+  INTO recent_consistency
+  FROM public.activity_logs
+  WHERE user_id = target_user_id
+    AND logged_date >= CURRENT_DATE - 14;
+
+  IF recent_consistency >= 80 THEN
+    UPDATE public.profiles
+    SET wisteria_tokens = LEAST(tokens + 1, 3),
+        wisteria_last_earned = CURRENT_DATE
+    WHERE id = target_user_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 10. Function: Deactivate expired Wisteria Wards automatically
+CREATE OR REPLACE FUNCTION public.expire_wisteria_wards()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.profiles
+  SET wisteria_active = false,
+      wisteria_end_date = NULL
+  WHERE wisteria_active = true
+    AND wisteria_end_date < CURRENT_DATE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

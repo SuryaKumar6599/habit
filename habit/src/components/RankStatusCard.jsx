@@ -26,6 +26,12 @@ export default function RankStatusCard() {
   }, [rankInfo.current.rank]);
 
   const staminaPercent = Math.round((stamina / maxStamina) * 100);
+  
+  const growthMultiplier = profile?.growth_multiplier || 1.0;
+  const consistencyPercent = profile?.consistency_percent || 0;
+  const swordTier = profile?.sword_tier || 'Wooden Sword';
+  const archetype = profile?.archetype || 'Unassigned';
+  const resonanceLevel = profile?.resonance_level || 1;
 
   const getStaminaColor = (pct) => {
     if (pct > 60) return 'var(--color-hp-full)';
@@ -105,30 +111,33 @@ export default function RankStatusCard() {
             <div>
               <p className="text-xs text-text-muted uppercase tracking-widest font-semibold">Slayer Rank</p>
               <p className="text-lg font-heading font-bold" style={{ color: rankColor }}>
-                {rankInfo.current.rank}
+                {rankInfo.current.rank} <span className="text-sm opacity-70 ml-1">Lv.{resonanceLevel}</span>
               </p>
+              <p className="text-xs text-text-muted mt-0.5">{archetype} • {swordTier}</p>
             </div>
           </div>
 
           {/* Quick Stats */}
           <div className="flex gap-4 sm:ml-auto">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-crimson/10">
-                <Swords className="w-4 h-4 text-crimson" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-500/10">
+                <Sparkles className="w-4 h-4 text-purple-400" />
               </div>
               <div>
-                <p className="text-xs text-text-muted">Total XP</p>
-                <p className="text-sm font-heading font-bold text-text-primary">{totalXp.toLocaleString()}</p>
+                <p className="text-xs text-text-muted">Training Eff.</p>
+                <p className="text-sm font-heading font-bold text-text-primary">
+                  {consistencyPercent}%
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-500/10">
-                <TrendingUp className="w-4 h-4 text-green-400" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-500/10">
+                <TrendingUp className="w-4 h-4 text-blue-400" />
               </div>
               <div>
-                <p className="text-xs text-text-muted">Today</p>
+                <p className="text-xs text-text-muted">Growth</p>
                 <p className="text-sm font-heading font-bold text-text-primary">
-                  {progress.completed}/{progress.total}
+                  {growthMultiplier.toFixed(2)}x
                 </p>
               </div>
             </div>

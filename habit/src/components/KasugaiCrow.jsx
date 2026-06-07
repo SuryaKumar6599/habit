@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Heart } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import useHabitStore from '../stores/habitStore';
+import useGrowthStore from '../stores/growthStore';
 
 // Lines keyed by relationship tier
 const LINES = {
@@ -33,6 +34,32 @@ const LINES = {
     "...",
     "I no longer caw. There is nothing to announce.",
   ],
+};
+
+// Growth-aware crow summons — injected based on live metrics
+const getGrowthSummons = (growthData) => {
+  const msgs = [];
+  const { consistencyPercent, currentRank, nextRank, progressToNextRank, corruptionIndex, swordTier, daysTrained } = growthData;
+
+  if (nextRank && progressToNextRank >= 80)
+    msgs.push(`CAW! You are ${100 - progressToNextRank}% away from ${nextRank.rank}. Do not stop now!`);
+  if (nextRank && progressToNextRank < 20)
+    msgs.push(`The path to ${nextRank.rank} is long. But so was the path to where you stand now.`);
+  if (corruptionIndex > 50)
+    msgs.push(`CAW! Corruption spreading. ${corruptionIndex}% corruption detected. Train. Now. Please.`);
+  if (corruptionIndex === 0)
+    msgs.push(`The village is clean. Demons have not dared approach. ${currentRank.rank} is worthy.`);
+  if (consistencyPercent >= 90)
+    msgs.push(`Training Efficiency: ${consistencyPercent}%. The Hashira have been informed. They are impressed.`);
+  if (consistencyPercent < 50 && daysTrained > 7)
+    msgs.push(`Only ${consistencyPercent}% efficiency. I have seen worse. I have not forgotten those slayers either.`);
+  if (swordTier === 'Elite Nichirin' || swordTier === 'Breathing Resonance')
+    msgs.push(`Your blade resonates. I can feel the breathing from here. ${swordTier} achieved.`);
+  if (daysTrained === 7)  msgs.push(`One week of training complete. The Corps has noticed your commitment.`);
+  if (daysTrained === 30) msgs.push(`A full month of training. Many give up here. You have not. CAW.`);
+  if (daysTrained === 90) msgs.push(`Three months. Your growth multiplier is ${growthData.growthMultiplier}×. Do you feel it?`);
+
+  return msgs;
 };
 
 const INTERVENTION_LINES = [
@@ -145,8 +172,16 @@ export default function KasugaiCrow() {
   const tier = getTier(relationship);
   const tc = TIER_COLORS[tier] || TIER_COLORS.neutral;
   const seenRef = useRef(0);
+  const growthData = useGrowthStore();
 
-  const [message, setMessage] = useState(() => pickLine(tier, { current: 0 }));
+  // Pick initial message — prefer growth summons when available
+  const getInitialMessage = () => {
+    const summons = getGrowthSummons(growthData);
+    if (summons.length > 0) return summons[0];
+    return pickLine(tier, { current: 0 });
+  };
+
+  const [message, setMessage] = useState(getInitialMessage);
   const [isIntervening, setIsIntervening] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const [ripple, setRipple] = useState(false);
@@ -176,18 +211,22 @@ export default function KasugaiCrow() {
     return () => clearTimeout(timer);
   }, [sessionOpenedAt, interventionFired, markInterventionFired]);
 
-  // Heart + ripple pop on new habit complete
+  // Heart + ripple pop on new habit complete — pick a growth summon if possible
   const prevLogsLen = useRef(todaysLogs.length);
   useEffect(() => {
     if (todaysLogs.length > prevLogsLen.current) {
       setShowHeart(true);
       setRipple(true);
-      setMessage(pickLine(tier, seenRef));
+      const summons = getGrowthSummons(growthData);
+      const newMsg = summons.length > 0
+        ? summons[Math.floor(Math.random() * summons.length)]
+        : pickLine(tier, seenRef);
+      setMessage(newMsg);
       setTimeout(() => setShowHeart(false), 1200);
       setTimeout(() => setRipple(false), 700);
     }
     prevLogsLen.current = todaysLogs.length;
-  }, [todaysLogs.length, tier]);
+  }, [todaysLogs.length, tier, growthData]);
 
   const tierLabel = {
     devoted: 'Bond: Devoted',

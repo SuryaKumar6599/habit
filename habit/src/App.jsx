@@ -6,7 +6,7 @@ import FinalSelectionAuth from './components/FinalSelectionAuth';
 import TrainingDashboard from './components/TrainingDashboard';
 import ButterflyMansionAnalytics from './components/ButterflyMansionAnalytics';
 import DemonEncounter from './components/DemonEncounter';
-import RankStatusCard from './components/RankStatusCard';
+import SlayerStatusDashboard from './components/SlayerStatusDashboard';
 import Navbar from './components/Navbar';
 import PrivacyScreen from './components/PrivacyScreen';
 import LaunchSequence from './components/LaunchSequence';
@@ -127,7 +127,7 @@ function App() {
           
           <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8">
             <div className="mb-8">
-              <RankStatusCard />
+              <SlayerStatusDashboard />
             </div>
             
             <Routes>
