@@ -59,7 +59,9 @@ CREATE TABLE public.profiles (
       'Serpent',
       'Insect',
       'Moon',
-      'Sun'
+      'Sun',
+      'Frost',
+      'Prosperity'
     )
   ),
   daily_missions JSONB DEFAULT '[]',
@@ -92,7 +94,9 @@ CREATE TABLE public.breathing_techniques (
       'Serpent',
       'Insect',
       'Moon',
-      'Sun'
+      'Sun',
+      'Frost',
+      'Prosperity'
     )
   ),
   frequency TEXT DEFAULT 'daily' CHECK (frequency IN ('daily', 'weekly')),

@@ -8,7 +8,7 @@ const AUTH_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
   top: `${seededRange(i + 21, 0, 100)}%`,
   width: `${seededRange(i + 41, 2, 5)}px`,
   height: `${seededRange(i + 61, 2, 5)}px`,
-  background: ['#facc15', '#fde047', '#f59e0b', '#4338ca', '#fff7ad'][i % 5],
+  background: ['#ffffff', '#f4f4f5', '#e4e4e7', '#d4d4d8', '#a1a1aa'][i % 5],
   animation: `float ${seededRange(i + 81, 4, 8)}s ease-in-out ${seededRange(i + 101, 0, 4)}s infinite, fade-in 1s ease-out`,
   opacity: seededRange(i + 121, 0.2, 0.5),
 }));
@@ -64,10 +64,10 @@ export default function FinalSelectionAuth() {
         <section className="hidden lg:flex glass-card rounded-r-none p-8 min-h-[620px] flex-col justify-between overflow-hidden relative">
           <div
             className="absolute inset-x-0 top-0 h-1"
-            style={{ background: 'linear-gradient(90deg, #facc15, #f59e0b, #4338ca)' }}
+            style={{ background: 'linear-gradient(90deg, #ffffff, #a1a1aa, #3f3f46)' }}
           />
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-yellow-400/24 border border-amber-700/18 text-amber-800 text-xs font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider">
               <Zap className="w-4 h-4" />
               Thunder Breathing
             </div>
@@ -75,7 +75,7 @@ export default function FinalSelectionAuth() {
               Strike once. Make today count.
             </h1>
             <p className="mt-4 text-sm text-text-secondary max-w-sm leading-6">
-              A bright Zenitsu-inspired command post for fast habit actions, daily bounties, rank progress, and lightning-charged momentum.
+              A focused glass command post for fast habit actions, daily bounties, rank progress, and steady momentum.
             </p>
           </div>
 
@@ -86,7 +86,7 @@ export default function FinalSelectionAuth() {
               ['Rank', 'Earn promotion'],
               ['Threats', 'Break misses'],
             ].map(([label, value]) => (
-              <div key={label} className="bg-yellow-100/45 border border-amber-700/15 rounded-lg p-4">
+              <div key={label} className="bg-white/5 border border-white/10 rounded-lg p-4">
                 <p className="section-label !text-[9px]">{label}</p>
                 <p className="mt-1 text-sm font-semibold text-text-primary">{value}</p>
               </div>
@@ -102,19 +102,19 @@ export default function FinalSelectionAuth() {
               <div
                 className="absolute inset-0 rounded-lg"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(250,204,21,0.5), rgba(67,56,202,0.12))',
-                  border: '2px solid rgba(180,83,9,0.24)',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
+                  border: '2px solid rgba(255,255,255,0.1)',
                   animation: 'breathing 3s ease-in-out infinite',
-                  color: 'rgba(250,204,21,0.46)',
+                  color: 'rgba(255,255,255,0.5)',
                 }}
               />
-              <Zap className="w-9 h-9 text-amber-600 relative z-10" strokeWidth={1.8} />
+              <Zap className="w-9 h-9 text-white relative z-10" strokeWidth={1.8} />
             </div>
 
             <h1
               className="text-3xl md:text-4xl font-heading font-extrabold mb-2"
               style={{
-                background: 'linear-gradient(135deg, #241504, #92400e 52%, #4338ca)',
+                background: 'linear-gradient(135deg, #ffffff, #d4d4d8 52%, #71717a)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -268,7 +268,7 @@ export default function FinalSelectionAuth() {
               {isSignUp ? 'Already a Demon Slayer?' : 'New recruit?'}{' '}
               <button
                 onClick={toggleMode}
-                className="text-indigo-700 hover:text-indigo-900 font-semibold transition-colors"
+                className="text-white hover:text-zinc-300 font-semibold transition-colors"
                 id="auth-toggle"
               >
                 {isSignUp ? 'Return to Corps Gate' : 'Join Final Selection'}

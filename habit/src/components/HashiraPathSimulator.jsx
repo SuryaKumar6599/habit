@@ -31,8 +31,8 @@ function PathChart({ idealPath, actualPath, width = 600, height = 200 }) {
           <stop offset="100%" stopColor="#3b82f6" stopOpacity="0"/>
         </linearGradient>
         <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4"/>
-          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0"/>
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4"/>
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0"/>
         </linearGradient>
       </defs>
 
@@ -58,7 +58,7 @@ function PathChart({ idealPath, actualPath, width = 600, height = 200 }) {
 
       {/* Lines */}
       <path d={pathD(idealPath)} fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray="6 4"/>
-      <path d={pathD(actualPath)} fill="none" stroke="#f59e0b" strokeWidth="2.5"/>
+      <path d={pathD(actualPath)} fill="none" stroke="#ffffff" strokeWidth="2.5"/>
     </svg>
   );
 }
@@ -107,7 +107,7 @@ export default function HashiraPathSimulator() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-heading font-extrabold text-text-primary flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-amber-400" />
+            <TrendingUp className="w-5 h-5 text-white" />
             Hashira Path Simulator
           </h2>
           <p className="text-sm text-text-secondary mt-0.5">
@@ -133,7 +133,7 @@ export default function HashiraPathSimulator() {
             <span className="w-6 border-t-2 border-dashed border-blue-400 inline-block"/> Ideal Path (1%/day)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-6 border-t-2 border-amber-400 inline-block"/> Your Path
+            <span className="w-6 border-t-2 border-white inline-block"/> Your Path
           </span>
         </div>
 
@@ -147,7 +147,7 @@ export default function HashiraPathSimulator() {
 
         <div className="mt-3 flex justify-between text-xs text-text-muted">
           <span>Day 1</span>
-          <span className="font-mono text-amber-400">{growthMultiplier.toFixed(2)}× current</span>
+          <span className="font-mono text-white">{growthMultiplier.toFixed(2)}× current</span>
           <span>Day {daysTrained}</span>
         </div>
       </div>
@@ -155,7 +155,7 @@ export default function HashiraPathSimulator() {
       {/* Future Projections (current consistency) */}
       <div>
         <h3 className="text-sm font-heading font-bold text-text-secondary uppercase tracking-widest mb-3 flex items-center gap-2">
-          <Target className="w-4 h-4 text-amber-400" />
+          <Target className="w-4 h-4 text-white" />
           Your Current Trajectory
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -184,7 +184,7 @@ export default function HashiraPathSimulator() {
             type="range" min="10" max="100" step="5"
             value={simConsistency}
             onChange={e => setSimConsistency(Number(e.target.value))}
-            className="flex-1 accent-amber-400"
+            className="flex-1 accent-white"
           />
           <span className="text-xs text-text-muted w-20 text-right">
             {simProject(365).rank.rank}

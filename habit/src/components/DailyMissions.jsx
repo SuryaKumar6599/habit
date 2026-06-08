@@ -88,7 +88,7 @@ export default function DailyMissions({ compactRail = false }) {
                 <h3 className="text-sm font-semibold text-text-primary pr-2 leading-tight">
                   {mission.title}
                 </h3>
-                <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md whitespace-nowrap border border-amber-400/15">
+                <span className="text-[10px] font-bold text-white bg-white/10 px-2 py-0.5 rounded-md whitespace-nowrap border border-white/20">
                   +{mission.reward_xp} XP
                 </span>
               </div>
@@ -99,7 +99,7 @@ export default function DailyMissions({ compactRail = false }) {
                   <span>{mission.current_count} / {mission.target_count}</span>
                 </div>
 
-                <div className="w-full bg-amber-900/12 rounded-full h-1.5 mb-3 overflow-hidden border border-amber-700/12">
+                <div className="w-full bg-white/5 rounded-full h-1.5 mb-3 overflow-hidden border border-white/10">
                   <div
                     className={`h-full rounded-full transition-all duration-1000 ${isComplete ? 'bg-green-500' : 'bg-crimson'}`}
                     style={{ width: `${Math.min(100, (mission.current_count / mission.target_count) * 100)}%` }}
@@ -111,7 +111,7 @@ export default function DailyMissions({ compactRail = false }) {
                   onClick={() => handleClaim(mission)}
                   className={`w-full py-2 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 ${isComplete && !isClaimed
                       ? 'bg-green-500 hover:bg-green-400 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]'
-                      : 'bg-amber-900/8 text-text-muted cursor-not-allowed'
+                      : 'bg-white/5 text-text-muted cursor-not-allowed'
                     }`}
                 >
                   {isComplete && !isClaimed ? (

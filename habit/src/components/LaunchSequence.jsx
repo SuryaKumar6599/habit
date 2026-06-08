@@ -96,10 +96,10 @@ function GreetScroll({ profile, missions, onSkip }) {
         </div>
       </div>
 
-      <div className="glass-card border border-amber-500/20 overflow-hidden">
-        <div className="bg-amber-500/10 px-4 py-2.5 flex items-center gap-2 border-b border-amber-500/20">
-          <Scroll className="w-4 h-4 text-amber-400" />
-          <span className="text-xs font-bold uppercase tracking-widest text-amber-300">Today's Bounties</span>
+      <div className="glass-card border border-white/10 overflow-hidden">
+        <div className="bg-white/5 px-4 py-2.5 flex items-center gap-2 border-b border-white/10">
+          <Scroll className="w-4 h-4 text-white" />
+          <span className="text-xs font-bold uppercase tracking-widest text-zinc-300">Today's Bounties</span>
         </div>
         <div className="p-4 space-y-3">
           {missions.map((m, i) => (
@@ -112,7 +112,7 @@ function GreetScroll({ profile, missions, onSkip }) {
               <div className="flex-1">
                 <p className="text-sm text-text-primary">{m.text}</p>
               </div>
-              <span className="text-xs font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+              <span className="text-xs font-bold text-white bg-white/10 px-2 py-0.5 rounded-full whitespace-nowrap">
                 +{m.xp} XP
               </span>
             </div>
@@ -208,7 +208,7 @@ export default function LaunchSequence({ onComplete }) {
       {(phase === 'fly' || phase === 'perch' || phase === 'scroll') && (
         <button
           onClick={handleSkip}
-          className="absolute top-4 right-4 z-10 flex items-center gap-2 rounded-md border border-amber-700/20 bg-yellow-100/70 px-3 py-2 text-xs font-bold uppercase tracking-wider text-amber-800 shadow-lg backdrop-blur-md transition-colors hover:bg-yellow-200/80"
+          className="absolute top-4 right-4 z-10 flex items-center gap-2 rounded-md border border-white/20 bg-zinc-800/70 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-lg backdrop-blur-md transition-colors hover:bg-zinc-700/80"
           aria-label="Skip intro"
           id="skip-launch"
         >

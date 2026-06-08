@@ -71,7 +71,7 @@ const INTERVENTION_LINES = [
 ];
 
 const TIER_COLORS = {
-  devoted:    { stroke: '#fbbf24', glow: 'rgba(251,191,36,0.4)',  eye: '#fbbf24', text: 'text-amber-300',  border: 'border-amber-400/60'  },
+  devoted:    { stroke: '#ffffff', glow: 'rgba(255,255,255,0.4)',  eye: '#ffffff', text: 'text-white',  border: 'border-white/60'  },
   happy:      { stroke: '#22c55e', glow: 'rgba(34,197,94,0.3)',   eye: '#22c55e', text: 'text-green-400',  border: 'border-green-500/40'  },
   neutral:    { stroke: '#5c5a6e', glow: 'rgba(92,90,110,0.2)',   eye: '#fff',    text: 'text-slate-400',  border: 'border-slate-600/40'  },
   sad:        { stroke: '#3b82f6', glow: 'rgba(59,130,246,0.2)',  eye: '#93c5fd', text: 'text-blue-400',   border: 'border-blue-600/30'   },
@@ -150,7 +150,7 @@ function CrowSVG({ tier, isIntervening, showHeart }) {
         <circle cx="54.8" cy="40.2" r="1" fill="#fff" />
         <circle cx="68.8" cy="40.2" r="1" fill="#fff" />
         {/* Beak */}
-        <path d="M56 52 L60 59 L64 52Z" fill="#f59e0b" />
+        <path d="M56 52 L60 59 L64 52Z" fill="#d4d4d8" />
         {/* Talons */}
         <line x1="48" y1="97" x2="42" y2="110" stroke="#0d0818" strokeWidth="3.5" strokeLinecap="round" />
         <line x1="60" y1="98" x2="60" y2="112" stroke="#0d0818" strokeWidth="3.5" strokeLinecap="round" />
@@ -273,7 +273,7 @@ export default function KasugaiCrow() {
           {/* Relationship meter */}
           <div className="flex items-center gap-1 ml-auto">
             <Heart className={`w-3 h-3 ${tc.text}`} />
-            <div className="w-16 h-1.5 rounded-full bg-amber-900/12 overflow-hidden border border-amber-700/12">
+            <div className="w-16 h-1.5 rounded-full bg-white/5 overflow-hidden border border-white/10">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{
@@ -290,7 +290,7 @@ export default function KasugaiCrow() {
         <p
           key={message}
           className={`text-sm italic font-serif transition-all duration-300 animate-fade-in ${
-            isIntervening ? 'text-amber-300' : 'text-text-primary'
+            isIntervening ? 'text-white' : 'text-text-primary'
           }`}
         >
           "{message}"

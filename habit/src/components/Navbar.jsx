@@ -41,12 +41,12 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-yellow-100/78 backdrop-blur-xl border-b border-amber-700/15 shadow-[0_12px_40px_rgba(180,83,9,0.16)] pt-[env(safe-area-inset-top)]">
+      <header className="sticky top-0 z-40 bg-void/80 backdrop-blur-xl border-b border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.6)] pt-[env(safe-area-inset-top)]">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
 
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-crimson/14 flex items-center justify-center border border-crimson/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <Sword className="w-4 h-4 text-crimson" />
             </div>
             <div>
@@ -60,7 +60,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1 bg-yellow-50/55 p-1 rounded-lg border border-amber-700/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
+          <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -71,7 +71,7 @@ export default function Navbar() {
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-semibold transition-all ${
                     isActive
                       ? 'bg-crimson/16 text-crimson-light border border-crimson/24 shadow-[inset_0_0_16px_rgba(220,38,38,0.1)]'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-yellow-200/40 border border-transparent'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-white/10 border border-transparent'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -103,14 +103,14 @@ export default function Navbar() {
                 <p className="text-xs text-text-primary font-bold">{profile?.display_name || 'Recruit'}</p>
                 <p className="text-[10px] text-text-muted uppercase tracking-wider">{rankInfo.current.rank}</p>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-yellow-100/55 flex items-center justify-center border border-amber-700/15 text-xs font-bold kanji-display text-text-primary">
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 text-xs font-bold kanji-display text-text-primary">
                 {rankInfo.current.kanji}
               </div>
             </div>
 
             <button
               onClick={handleSignOut}
-              className="hidden md:flex items-center justify-center w-9 h-9 rounded-md bg-yellow-100/45 hover:bg-red-500/10 text-text-muted hover:text-red-400 transition-colors border border-transparent hover:border-red-500/20"
+              className="hidden md:flex items-center justify-center w-9 h-9 rounded-md bg-white/5 hover:bg-red-500/10 text-text-muted hover:text-red-400 transition-colors border border-transparent hover:border-red-500/20"
               title="Leave the Corps (Sign Out)"
               id="sign-out"
             >
@@ -119,7 +119,7 @@ export default function Navbar() {
 
             {/* Mobile toggle */}
             <button
-              className="md:hidden p-2 rounded-md text-text-secondary hover:text-text-primary hover:bg-yellow-200/40"
+              className="md:hidden p-2 rounded-md text-text-secondary hover:text-text-primary hover:bg-white/10"
               onClick={toggleMenu}
               aria-label="Toggle navigation menu"
             >
@@ -131,10 +131,10 @@ export default function Navbar() {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-30 pt-16 bg-yellow-50/96 backdrop-blur-xl md:hidden animate-fade-in flex flex-col">
+        <div className="fixed inset-0 z-30 pt-16 bg-void/95 backdrop-blur-xl md:hidden animate-fade-in flex flex-col">
           {/* Mobile User Card */}
-          <div className="p-4 border-b border-amber-700/15 flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-lg bg-yellow-100/55 flex items-center justify-center border border-amber-700/15 text-lg font-bold kanji-display text-text-primary">
+          <div className="p-4 border-b border-white/10 flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 text-lg font-bold kanji-display text-text-primary">
               {rankInfo.current.kanji}
             </div>
             <div>
@@ -167,7 +167,7 @@ export default function Navbar() {
                   className={`flex items-center gap-3 px-4 py-4 rounded-lg text-sm font-semibold transition-all ${
                     isActive
                       ? 'bg-crimson/15 text-crimson-light border border-crimson/20'
-                      : 'text-text-secondary bg-yellow-100/45 border border-amber-700/15'
+                      : 'text-text-secondary bg-white/5 border border-white/10'
                   }`}
                 >
                   <Icon className="w-5 h-5" />

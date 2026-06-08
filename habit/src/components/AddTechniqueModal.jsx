@@ -10,6 +10,7 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
   const [breathingElement, setBreathingElement] = useState('Water');
   const [frequency, setFrequency] = useState('daily');
   const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const { addTechnique } = useHabitStore();
   const { user } = useAuthStore();
 
@@ -17,6 +18,7 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
     e.preventDefault();
     if (!formName.trim() || !user) return;
 
+    setErrorMsg('');
     setSubmitting(true);
     const result = await addTechnique(user.id, {
       formName: formName.trim(),
@@ -32,6 +34,8 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
       setBreathingElement('Water');
       setFrequency('daily');
       onClose();
+    } else {
+      setErrorMsg(result.error);
     }
   };
 
@@ -82,6 +86,12 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {errorMsg && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold relative z-10">
+            {errorMsg}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
           {/* Form Name */}

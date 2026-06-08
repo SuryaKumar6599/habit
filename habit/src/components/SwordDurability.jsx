@@ -35,8 +35,8 @@ export default function SwordDurability() {
     statusText = 'Dull / Chipped';
     criticalPulse = true;
   } else if (durability <= 60) {
-    barColor = '#eab308';
-    glowColor = 'rgba(234,179,8,0.4)';
+    barColor = '#a1a1aa';
+    glowColor = 'rgba(161,161,170,0.4)';
     statusText = 'Worn';
   }
 
@@ -95,7 +95,7 @@ export default function SwordDurability() {
       </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-amber-900/12 rounded-full h-3 mb-2 border border-amber-700/12 relative overflow-hidden shadow-inner">
+      <div className="w-full bg-white/5 rounded-full h-3 mb-2 border border-white/10 relative overflow-hidden shadow-inner">
         <div
           className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
           style={{

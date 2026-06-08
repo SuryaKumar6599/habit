@@ -69,7 +69,7 @@ export default function ButterflyMansionAnalytics() {
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-text-primary mb-1 flex items-center gap-2">
-          <BookOpen className="w-7 h-7 text-amber-400" />
+          <BookOpen className="w-7 h-7 text-white" />
           Slayer Ledgers
         </h1>
         <p className="text-sm text-text-secondary">

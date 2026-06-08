@@ -8,7 +8,7 @@ const TIER_COLORS = {
 
 function CorruptionBar({ pct, color }) {
   return (
-    <div className="w-full h-1.5 rounded-full bg-amber-900/12 border border-amber-700/12 overflow-hidden mt-2">
+    <div className="w-full h-1.5 rounded-full bg-white/5 border border-white/10 overflow-hidden mt-2">
       <div
         className="h-full rounded-full transition-all duration-700"
         style={{ width: `${pct}%`, background: color, boxShadow: `0 0 6px ${color}` }}

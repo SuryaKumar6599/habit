@@ -127,8 +127,8 @@ export default function TrainingDashboard() {
   }
 
   const renderEmptyTechniques = () => (
-    <div className="glass-card p-10 text-center border-dashed border-amber-700/18">
-      <div className="w-16 h-16 rounded-lg bg-yellow-100/45 flex items-center justify-center mx-auto mb-4 border border-amber-700/15">
+    <div className="glass-card p-10 text-center border-dashed border-white/10">
+      <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/10">
         <Flame className="w-8 h-8 text-text-muted" />
       </div>
       <h3 className="text-lg font-bold text-text-primary mb-2">No Techniques Yet</h3>
@@ -180,7 +180,7 @@ export default function TrainingDashboard() {
                 {technique.breathing_element}
               </span>
               {technique.streak_count > 0 && (
-                <span className="flex items-center text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
+                <span className="flex items-center text-[10px] font-bold text-white bg-white/10 px-2 py-0.5 rounded-md border border-white/20">
                   <Flame className="w-3 h-3 mr-1" /> {technique.streak_count} Streak
                 </span>
               )}
@@ -272,8 +272,8 @@ export default function TrainingDashboard() {
         <DemonPanel demons={activeDemons} compactRail />
       ) : (
         <div className="glass-card p-6 text-center">
-          <div className="w-12 h-12 rounded-lg bg-green-400/10 border border-green-400/20 flex items-center justify-center mx-auto mb-3">
-            <Shield className="w-6 h-6 text-green-400" />
+          <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3">
+            <Shield className="w-6 h-6 text-white" />
           </div>
           <h3 className="text-base font-heading font-bold text-text-primary">No active threats</h3>
           <p className="text-xs text-text-muted mt-1">Your missed-day pressure is clear for now.</p>
@@ -320,11 +320,11 @@ export default function TrainingDashboard() {
 
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="bg-yellow-100/45 border border-amber-700/15 rounded-lg px-3 py-2 min-w-24">
+            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 min-w-24">
               <p className="section-label !text-[9px]">Today</p>
               <p className="font-heading font-bold text-text-primary">{completionRate}%</p>
             </div>
-            <div className="bg-yellow-100/45 border border-amber-700/15 rounded-lg px-3 py-2 min-w-24">
+            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 min-w-24">
               <p className="section-label !text-[9px]">Threats</p>
               <p className="font-heading font-bold text-text-primary">{activeDemons.length}</p>
             </div>

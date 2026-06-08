@@ -128,7 +128,7 @@ export default function HashiraTrainingModal({ onClose }) {
               </div>
               <h3 className="text-lg font-bold text-text-primary mb-2">Training Complete</h3>
               <p className="text-text-secondary text-sm mb-6">
-                You gained <strong className="text-amber-400">+100 XP</strong> and your sword durability improved!
+                You gained <strong className="text-white">+100 XP</strong> and your sword durability improved!
               </p>
               
               <button

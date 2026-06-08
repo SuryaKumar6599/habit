@@ -35,9 +35,9 @@ export default function BreathingBalanceChart() {
         </div>
 
         {isConstant && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/15 border border-amber-400/30">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-amber-400">Constant</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 border border-white/20">
+            <Sparkles className="w-4 h-4 text-white" />
+            <span className="text-xs font-bold text-white">Constant</span>
           </div>
         )}
       </div>
@@ -88,8 +88,8 @@ export default function BreathingBalanceChart() {
       )}
 
       {isConstant && (
-        <div className="mt-4 p-3 rounded-xl bg-amber-400/10 border border-amber-400/20 text-center">
-          <p className="text-xs font-bold text-amber-400">
+        <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+          <p className="text-xs font-bold text-white">
             ⚡ Total Concentration: Constant — All core styles mastered
           </p>
         </div>

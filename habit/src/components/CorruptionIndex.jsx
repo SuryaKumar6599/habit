@@ -82,7 +82,7 @@ export default function CorruptionIndex() {
         </p>
       )}
       {corruptionIndex > 25 && corruptionIndex <= 50 && (
-        <p className="text-xs text-yellow-400 mt-2">
+        <p className="text-xs text-white mt-2">
           ⚠️ Demons are gathering. Return to your training before they grow stronger.
         </p>
       )}

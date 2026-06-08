@@ -100,7 +100,7 @@ export default function SlayerStatusDashboard() {
           </div>
 
           {/* Days trained badge */}
-          <div className="sm:text-right shrink-0 bg-yellow-100/45 border border-amber-700/15 rounded-lg px-4 py-3">
+          <div className="sm:text-right shrink-0 bg-white/5 border border-white/10 rounded-lg px-4 py-3">
             <p className="text-3xl font-heading font-extrabold leading-none" style={{ color: rankColor }}>
               {daysTrained}
             </p>
@@ -116,7 +116,7 @@ export default function SlayerStatusDashboard() {
             { label: 'Sword',         value: swordTier.split(' ').slice(-1)[0], icon: Swords, color: rankColor },
             { label: 'Corruption',    value: `${corruptionIndex}%`, icon: Skull, color: corruptColor },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="bg-yellow-100/42 border border-amber-700/15 rounded-lg p-3 flex items-center gap-2.5">
+            <div key={label} className="bg-white/5 border border-white/10 rounded-lg p-3 flex items-center gap-2.5">
               <div
                 className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
                 style={{ background: `${color}15` }}
@@ -142,7 +142,7 @@ export default function SlayerStatusDashboard() {
                 {progressToNextRank}%
               </span>
             </div>
-            <div className="h-2 rounded-full bg-amber-900/12 overflow-hidden border border-amber-700/12">
+            <div className="h-2 rounded-full bg-white/5 overflow-hidden border border-white/10">
               <div
                 className="h-full rounded-full transition-all duration-1000"
                 style={{

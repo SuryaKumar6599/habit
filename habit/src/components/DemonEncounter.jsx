@@ -107,7 +107,7 @@ export default function DemonEncounter() {
     if (status === STATUS.DEFEATED) return '#6b7280';
     if (progress > 50) return '#ef4444';
     if (progress > 25) return '#f97316';
-    return '#eab308';
+    return '#ffffff';
   };
 
   const arcColor = getColor();
@@ -190,10 +190,10 @@ export default function DemonEncounter() {
           <div className="absolute flex flex-col items-center justify-center text-center">
             {status === STATUS.VICTORY ? (
               <div className="flex flex-col items-center gap-2">
-                <Trophy className="w-12 h-12 text-yellow-400 animate-bounce" />
-                <p className="text-yellow-400 font-heading font-bold text-lg">Demon Slain!</p>
+                <Trophy className="w-12 h-12 text-white animate-bounce" />
+                <p className="text-white font-heading font-bold text-lg">Demon Slain!</p>
                 {xpReward && (
-                  <p className="text-yellow-300 text-sm font-bold flex items-center gap-1">
+                  <p className="text-zinc-300 text-sm font-bold flex items-center gap-1">
                     <Zap className="w-4 h-4" /> +{xpReward} XP
                   </p>
                 )}
@@ -247,7 +247,7 @@ export default function DemonEncounter() {
 
           {isRunning && (
             <>
-              <button onClick={handlePause} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-semibold hover:bg-yellow-500/20 transition-all">
+              <button onClick={handlePause} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 text-white border border-white/20 font-semibold hover:bg-white/20 transition-all">
                 <Pause className="w-4 h-4" />
                 Rest
               </button>
@@ -274,8 +274,8 @@ export default function DemonEncounter() {
 
         {/* Info tip */}
         {isIdle && (
-          <div className="glass-card p-4 max-w-md text-center border border-yellow-500/10 bg-yellow-500/5">
-            <p className="text-xs text-yellow-200/70">
+          <div className="glass-card p-4 max-w-md text-center border border-white/10 bg-white/5">
+            <p className="text-xs text-white/70">
               ⚠️ Stay focused and do not leave the app. Fleeing the battle grants <strong>no XP</strong>. Slaying the demon fully repairs your Nichirin Sword!
             </p>
           </div>
