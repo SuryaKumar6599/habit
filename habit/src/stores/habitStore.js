@@ -11,9 +11,11 @@ const BREATHING_ELEMENTS = {
   Wind:    { color: '#22c55e', bg: 'bg-green-500',  label: 'Wind Breathing',    icon: 'Wind' },
   Stone:   { color: '#78716c', bg: 'bg-stone-500',  label: 'Stone Breathing',   icon: 'Mountain' },
   Mist:    { color: '#06b6d4', bg: 'bg-cyan-500',   label: 'Mist Breathing',    icon: 'CloudFog' },
+  Frost:   { color: '#67e8f9', bg: 'bg-cyan-300',   label: 'Frost Breathing',   icon: 'Snowflake' },
   Love:    { color: '#ec4899', bg: 'bg-pink-500',   label: 'Love Breathing',    icon: 'Heart' },
   Serpent: { color: '#6366f1', bg: 'bg-indigo-500', label: 'Serpent Breathing', icon: 'Waves' },
   Insect:  { color: '#8b5cf6', bg: 'bg-violet-500', label: 'Insect Breathing',  icon: 'Bug' },
+  Prosperity: { color: '#34d399', bg: 'bg-emerald-400', label: 'Prosperity Breathing', icon: 'Gem' },
   Moon:    { color: '#1e3a5f', bg: 'bg-blue-900',   label: 'Moon Breathing',    icon: 'Moon' },
   Sun:     { color: '#fbbf24', bg: 'bg-amber-400',  label: 'Sun Breathing',     icon: 'Sun' },
 };

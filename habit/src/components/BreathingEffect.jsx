@@ -1,32 +1,101 @@
-import { Check, Feather, Swords } from 'lucide-react';
+import {
+  Check,
+  CloudFog,
+  Droplets,
+  Feather,
+  Flame,
+  Gem,
+  Heart,
+  Moon,
+  Mountain,
+  Snowflake,
+  Sparkles,
+  Swords,
+  Waves,
+  Wind,
+  Zap,
+} from 'lucide-react';
 import { BREATHING_ELEMENTS } from '../stores/habitStore';
 
-const EFFECT_COPY = {
-  Water: 'Flowing Cut',
-  Flame: 'Blazing Form',
-  Thunder: 'Thunderclap',
-  Wind: 'Spiral Gale',
-  Stone: 'Earth Breaker',
-  Mist: 'Veiled Step',
-  Love: 'Heart Bloom',
-  Serpent: 'Coiling Fang',
-  Insect: 'Venom Pierce',
-  Moon: 'Crescent Dance',
-  Sun: 'Sun Halo',
-};
-
-const ELEMENT_CLASS = {
-  Water: 'breathing-effect--water',
-  Flame: 'breathing-effect--flame',
-  Thunder: 'breathing-effect--thunder',
-  Wind: 'breathing-effect--wind',
-  Stone: 'breathing-effect--stone',
-  Mist: 'breathing-effect--mist',
-  Love: 'breathing-effect--love',
-  Serpent: 'breathing-effect--serpent',
-  Insect: 'breathing-effect--insect',
-  Moon: 'breathing-effect--moon',
-  Sun: 'breathing-effect--sun',
+const TECHNIQUES = {
+  Water: {
+    title: 'Water Surface Slash',
+    className: 'breathing-effect--water',
+    Icon: Droplets,
+    motifs: ['wave', 'wave', 'spray', 'orbit'],
+  },
+  Flame: {
+    title: 'Rising Scorching Sun',
+    className: 'breathing-effect--flame',
+    Icon: Flame,
+    motifs: ['fireRing', 'ember', 'ember', 'slash'],
+  },
+  Thunder: {
+    title: 'Thunderclap And Flash',
+    className: 'breathing-effect--thunder',
+    Icon: Zap,
+    motifs: ['bolt', 'bolt', 'fracture', 'speedline'],
+  },
+  Wind: {
+    title: 'Dust Whirlwind Cutter',
+    className: 'breathing-effect--wind',
+    Icon: Wind,
+    motifs: ['gale', 'gale', 'leaf', 'speedline'],
+  },
+  Stone: {
+    title: 'Bedrock Resonance',
+    className: 'breathing-effect--stone',
+    Icon: Mountain,
+    motifs: ['shockwave', 'boulder', 'boulder', 'fracture'],
+  },
+  Mist: {
+    title: 'Obscuring Cloud Drift',
+    className: 'breathing-effect--mist',
+    Icon: CloudFog,
+    motifs: ['fog', 'fog', 'ghostSlash', 'orbit'],
+  },
+  Frost: {
+    title: 'Crystal Rime Bloom',
+    className: 'breathing-effect--frost',
+    Icon: Snowflake,
+    motifs: ['crystal', 'crystal', 'snow', 'slash'],
+  },
+  Love: {
+    title: 'Heartstring Bloom',
+    className: 'breathing-effect--love',
+    Icon: Heart,
+    motifs: ['ribbon', 'petal', 'petal', 'orbit'],
+  },
+  Serpent: {
+    title: 'Coiling Fang',
+    className: 'breathing-effect--serpent',
+    Icon: Waves,
+    motifs: ['serpent', 'serpent', 'fang', 'slash'],
+  },
+  Insect: {
+    title: 'Butterfly Venom Pierce',
+    className: 'breathing-effect--insect',
+    Icon: Sparkles,
+    motifs: ['butterfly', 'butterfly', 'poison', 'needle'],
+  },
+  Prosperity: {
+    title: 'Golden Fortune Current',
+    className: 'breathing-effect--prosperity',
+    Icon: Gem,
+    motifs: ['coin', 'coin', 'leaf', 'radiance'],
+  },
+  Moon: {
+    title: 'Crescent Moon Dance',
+    className: 'breathing-effect--moon',
+    Icon: Moon,
+    motifs: ['crescent', 'crescent', 'ghostSlash', 'orbit'],
+  },
+  Sun: {
+    title: 'Solar Halo Waltz',
+    className: 'breathing-effect--sun',
+    Icon: Flame,
+    motifs: ['sunArc', 'fireRing', 'radiance', 'slash'],
+  },
 };
 
 function FlyingCrow({ color }) {
@@ -45,38 +114,60 @@ function FlyingCrow({ color }) {
   );
 }
 
+function Motif({ type, index }) {
+  return <span className={`breathing-motif breathing-motif--${type} breathing-motif--${index}`} aria-hidden="true" />;
+}
+
+function ImpactMarks() {
+  return (
+    <div className="breathing-impact" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
 export default function BreathingEffect({ effect }) {
   if (!effect) return null;
 
   const element = BREATHING_ELEMENTS[effect.element] || BREATHING_ELEMENTS.Water;
-  const effectClass = ELEMENT_CLASS[effect.element] || ELEMENT_CLASS.Water;
-  const label = EFFECT_COPY[effect.element] || 'Total Concentration';
+  const technique = TECHNIQUES[effect.element] || TECHNIQUES.Water;
+  const Icon = technique.Icon || Swords;
 
   return (
     <div
-      className={`breathing-effect ${effectClass}`}
+      className={`breathing-effect ${technique.className}`}
       style={{
         '--effect-color': element.color,
-        '--effect-glow': `${element.color}55`,
+        '--effect-glow': `${element.color}66`,
+        '--effect-soft': `${element.color}22`,
       }}
       aria-live="polite"
     >
+      <div className="breathing-effect__flash" />
+      <div className="breathing-effect__vignette" />
       <div className="breathing-effect__field">
+        <ImpactMarks />
         <div className="breathing-effect__ring breathing-effect__ring--outer" />
         <div className="breathing-effect__ring breathing-effect__ring--inner" />
-        <div className="breathing-effect__swirl breathing-effect__swirl--one" />
-        <div className="breathing-effect__swirl breathing-effect__swirl--two" />
-        <div className="breathing-effect__swirl breathing-effect__swirl--three" />
+        <div className="breathing-effect__core-glow" />
+        {technique.motifs.map((motif, index) => (
+          <Motif key={`${motif}-${index}`} type={motif} index={index + 1} />
+        ))}
         <div className="breathing-effect__slash breathing-effect__slash--one" />
         <div className="breathing-effect__slash breathing-effect__slash--two" />
         <div className="breathing-effect__slash breathing-effect__slash--three" />
         <FlyingCrow color={element.color} />
 
         <div className="breathing-effect__seal">
-          <Swords className="breathing-effect__icon" />
+          <Icon className="breathing-effect__icon" />
           <div>
             <p className="breathing-effect__eyebrow">{effect.element} Breathing</p>
-            <h2 className="breathing-effect__title">{label}</h2>
+            <h2 className="breathing-effect__title">{technique.title}</h2>
             <p className="breathing-effect__caption">
               <Check className="w-4 h-4" />
               {effect.techniqueName}

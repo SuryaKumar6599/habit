@@ -77,11 +77,13 @@ const ELEMENT_THEMES = {
   Flame:   { primary: '#f97316', glow: '#fb923c' },
   Thunder: { primary: '#eab308', glow: '#facc15' },
   Mist:    { primary: '#06b6d4', glow: '#22d3ee' },
+  Frost:   { primary: '#67e8f9', glow: '#a5f3fc' },
   Wind:    { primary: '#22c55e', glow: '#4ade80' },
   Love:    { primary: '#ec4899', glow: '#f472b6' },
   Stone:   { primary: '#78716c', glow: '#a8a29e' },
   Serpent: { primary: '#6366f1', glow: '#818cf8' },
   Insect:  { primary: '#8b5cf6', glow: '#a78bfa' },
+  Prosperity: { primary: '#34d399', glow: '#facc15' },
   Moon:    { primary: '#3b5998', glow: '#5b7bc2' },
   Sun:     { primary: '#fbbf24', glow: '#fcd34d' },
 };

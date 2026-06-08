@@ -98,7 +98,7 @@ export default function TrainingDashboard() {
 
     if (!result?.error && !result?.alreadyDone) {
       if (effectTimer.current) clearTimeout(effectTimer.current);
-      effectTimer.current = setTimeout(() => setCompletionEffect(null), 2200);
+      effectTimer.current = setTimeout(() => setCompletionEffect(null), 2900);
     }
   };
 
@@ -184,13 +184,17 @@ export default function TrainingDashboard() {
                 return (
                   <div 
                     key={technique.id} 
-                    className={`glass-card p-5 relative overflow-hidden flex flex-col min-h-[160px] transition-all duration-500 ${
+                    className={`technique-card glass-card p-5 relative overflow-hidden flex flex-col min-h-[160px] transition-all duration-500 ${
                       isCompletedToday ? 'opacity-70 scale-[0.98]' : 'hover:-translate-y-1 hover:shadow-lg hover:shadow-white/5'
                     }`}
                     style={{
                       borderLeft: `3px solid ${element?.color}`,
+                      '--technique-color': element?.color,
                     }}
                   >
+                    <div className="technique-card__idle-aura" />
+                    <div className="technique-card__breath-line technique-card__breath-line--one" />
+                    <div className="technique-card__breath-line technique-card__breath-line--two" />
                     {/* Background glow based on element */}
                     <div 
                       className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-screen pointer-events-none transition-opacity duration-700"

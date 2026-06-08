@@ -596,6 +596,312 @@
   .breathing-effect--insect .breathing-effect__swirl {
     height: 16%;
   }
+
+  .technique-card {
+    isolation: isolate;
+  }
+
+  .technique-card__idle-aura,
+  .technique-card__breath-line {
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .technique-card__idle-aura {
+    inset: auto -18% -42% 18%;
+    height: 68%;
+    border-radius: 999px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--technique-color), transparent 68%), transparent 68%);
+    filter: blur(18px);
+    opacity: 0.34;
+    animation: technique-idle-pulse 4.8s ease-in-out infinite;
+  }
+
+  .technique-card__breath-line {
+    left: -35%;
+    width: 70%;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--technique-color), white 30%), transparent);
+    opacity: 0;
+    transform: rotate(-10deg);
+    animation: technique-breath-line 5.8s ease-in-out infinite;
+  }
+
+  .technique-card__breath-line--one {
+    top: 24%;
+  }
+
+  .technique-card__breath-line--two {
+    top: 68%;
+    animation-delay: 2.1s;
+    transform: rotate(8deg);
+  }
+}
+
+/* ============================================
+   Premium Breathing Reward System
+   ============================================ */
+.breathing-effect {
+  background:
+    radial-gradient(circle at 50% 48%, var(--effect-soft), transparent 34%),
+    linear-gradient(115deg, rgba(5, 5, 8, 0.78), rgba(10, 10, 18, 0.2) 44%, rgba(5, 5, 8, 0.68)),
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 26px);
+  animation: breathing-effect-fade 2.9s ease-out forwards, breathing-screen-shake 0.62s cubic-bezier(0.2, 0.8, 0.2, 1) 0.34s 1;
+}
+
+.breathing-effect__field {
+  width: min(88vw, 680px);
+}
+
+.breathing-effect__flash,
+.breathing-effect__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.breathing-effect__flash {
+  background: color-mix(in srgb, var(--effect-color), white 54%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: breathing-screen-flash 1.2s ease-out 0.18s forwards;
+}
+
+.breathing-effect__vignette {
+  background: radial-gradient(circle, transparent 24%, rgba(0, 0, 0, 0.22) 48%, rgba(0, 0, 0, 0.76));
+  animation: breathing-vignette-draw 2.9s ease-out forwards;
+}
+
+.breathing-effect__core-glow {
+  position: absolute;
+  width: 26%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--effect-color), white 42%), var(--effect-glow), transparent 72%);
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  animation: breathing-core-pulse 2.45s ease-out forwards;
+}
+
+.breathing-effect__ring {
+  border-color: color-mix(in srgb, var(--effect-color), white 18%);
+  box-shadow: 0 0 58px var(--effect-glow), inset 0 0 52px var(--effect-soft);
+}
+
+.breathing-effect__slash {
+  height: clamp(3px, 0.8vw, 7px);
+  background: linear-gradient(90deg, transparent, white 18%, color-mix(in srgb, var(--effect-color), white 24%) 50%, transparent);
+  box-shadow: 0 0 26px var(--effect-color), 0 0 70px var(--effect-glow);
+}
+
+.breathing-effect__seal {
+  border-radius: 8px;
+}
+
+.breathing-motif {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  color: var(--effect-color);
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 16px var(--effect-color));
+}
+
+.breathing-motif--wave,
+.breathing-motif--gale,
+.breathing-motif--ribbon,
+.breathing-motif--serpent,
+.breathing-motif--sunArc,
+.breathing-motif--crescent {
+  width: 82%;
+  height: 28%;
+  border: 5px solid currentColor;
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 60% 44% 60% 42%;
+  animation: motif-sweep 2.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.breathing-motif--wave::after,
+.breathing-motif--gale::after,
+.breathing-motif--serpent::after,
+.breathing-motif--sunArc::after {
+  content: '';
+  position: absolute;
+  inset: 18% 6% auto auto;
+  width: 22%;
+  height: 46%;
+  border-radius: 999px;
+  background: currentColor;
+  filter: blur(12px);
+  opacity: 0.38;
+}
+
+.breathing-motif--fireRing {
+  width: 76%;
+  aspect-ratio: 1;
+  border-radius: 48% 52% 42% 58%;
+  border: 7px solid currentColor;
+  clip-path: polygon(50% 0, 62% 18%, 76% 4%, 78% 28%, 100% 30%, 82% 48%, 96% 66%, 70% 66%, 72% 94%, 52% 76%, 34% 100%, 30% 72%, 4% 78%, 22% 56%, 0 40%, 26% 34%, 20% 8%, 42% 24%);
+  animation: motif-spin-bloom 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.breathing-motif--bolt,
+.breathing-motif--fracture {
+  width: 74%;
+  height: 12%;
+  background: currentColor;
+  clip-path: polygon(0 42%, 36% 42%, 29% 0, 66% 54%, 49% 54%, 58% 100%, 18% 48%, 0 56%);
+  animation: motif-strike 1.7s cubic-bezier(0.11, 0.82, 0.19, 1) forwards;
+}
+
+.breathing-motif--shockwave {
+  width: 82%;
+  aspect-ratio: 1;
+  border: 4px solid currentColor;
+  border-radius: 18px;
+  transform: rotate(45deg);
+  animation: motif-shockwave 2.35s ease-out forwards;
+}
+
+.breathing-motif--boulder {
+  width: 10%;
+  aspect-ratio: 1;
+  border-radius: 26% 40% 34% 48%;
+  background: linear-gradient(135deg, color-mix(in srgb, currentColor, white 26%), color-mix(in srgb, currentColor, black 38%));
+  box-shadow: inset -8px -10px 0 rgba(0, 0, 0, 0.2);
+  animation: motif-boulder 2.35s ease-out forwards;
+}
+
+.breathing-motif--fog {
+  width: 92%;
+  height: 22%;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, color-mix(in srgb, currentColor, white 42%), transparent 72%);
+  filter: blur(18px);
+  animation: motif-fog 2.9s ease-out forwards;
+}
+
+.breathing-motif--crystal {
+  width: 18%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, white, currentColor 46%, transparent 47%);
+  clip-path: polygon(50% 0, 62% 34%, 100% 50%, 62% 66%, 50% 100%, 38% 66%, 0 50%, 38% 34%);
+  animation: motif-crystal 2.35s ease-out forwards;
+}
+
+.breathing-motif--snow,
+.breathing-motif--petal,
+.breathing-motif--leaf,
+.breathing-motif--coin,
+.breathing-motif--ember,
+.breathing-motif--butterfly,
+.breathing-motif--poison {
+  width: 11%;
+  aspect-ratio: 1;
+  border-radius: 72% 28% 68% 32%;
+  background: color-mix(in srgb, currentColor, white 22%);
+  animation: motif-particle-burst 2.6s ease-out forwards;
+}
+
+.breathing-motif--coin {
+  border-radius: 999px;
+  background: radial-gradient(circle at 32% 28%, white, #fef08a 22%, currentColor 62%, #14532d);
+}
+
+.breathing-motif--butterfly {
+  background:
+    radial-gradient(ellipse at 28% 44%, currentColor 0 34%, transparent 35%),
+    radial-gradient(ellipse at 72% 44%, color-mix(in srgb, currentColor, white 44%) 0 34%, transparent 35%);
+}
+
+.breathing-motif--fang,
+.breathing-motif--needle,
+.breathing-motif--ghostSlash,
+.breathing-motif--radiance,
+.breathing-motif--orbit,
+.breathing-motif--slash,
+.breathing-motif--speedline,
+.breathing-motif--spray {
+  width: 68%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, white, currentColor, transparent);
+  animation: motif-strike 2.1s ease-out forwards;
+}
+
+.breathing-motif--spray {
+  height: 18%;
+  background:
+    radial-gradient(circle at 12% 52%, white 0 3px, transparent 4px),
+    radial-gradient(circle at 32% 28%, currentColor 0 4px, transparent 5px),
+    radial-gradient(circle at 54% 64%, white 0 3px, transparent 4px),
+    radial-gradient(circle at 74% 34%, currentColor 0 4px, transparent 5px);
+}
+
+.breathing-motif--speedline {
+  height: 8px;
+  background:
+    linear-gradient(90deg, transparent, currentColor, transparent),
+    linear-gradient(90deg, transparent, white, transparent);
+  background-size: 100% 2px, 82% 2px;
+  background-position: center 0, center 6px;
+  background-repeat: no-repeat;
+}
+
+.breathing-motif--radiance {
+  box-shadow: 0 -34px 0 -1px currentColor, 0 34px 0 -1px currentColor;
+}
+
+.breathing-impact {
+  position: absolute;
+  inset: 2%;
+  animation: impact-pop 1.8s ease-out forwards;
+}
+
+.breathing-impact span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, white, var(--effect-color), transparent);
+  transform-origin: left center;
+}
+
+.breathing-impact span:nth-child(1) { transform: rotate(0deg); }
+.breathing-impact span:nth-child(2) { transform: rotate(42deg); }
+.breathing-impact span:nth-child(3) { transform: rotate(96deg); }
+.breathing-impact span:nth-child(4) { transform: rotate(156deg); }
+.breathing-impact span:nth-child(5) { transform: rotate(214deg); }
+.breathing-impact span:nth-child(6) { transform: rotate(300deg); }
+
+.breathing-motif--1 { transform: rotate(16deg) translateY(-16%); }
+.breathing-motif--2 { transform: rotate(136deg) translateY(12%); animation-delay: 90ms; }
+.breathing-motif--3 { transform: rotate(252deg) translateY(-8%); animation-delay: 180ms; }
+.breathing-motif--4 { transform: rotate(-28deg) translateY(18%); animation-delay: 260ms; }
+
+.breathing-effect--water .breathing-motif--wave { border-width: 6px; }
+.breathing-effect--flame .breathing-effect__field,
+.breathing-effect--sun .breathing-effect__field { filter: saturate(1.18) contrast(1.08); }
+.breathing-effect--thunder { animation-name: breathing-effect-fade, thunder-screen-stutter; }
+.breathing-effect--mist .breathing-effect__seal,
+.breathing-effect--frost .breathing-effect__seal { backdrop-filter: blur(18px); }
+.breathing-effect--stone .breathing-effect__field { animation: stone-weight-drop 2.4s ease-out forwards; }
+.breathing-effect--prosperity .breathing-effect__ring { border-style: dotted; }
+
+@keyframes technique-idle-pulse {
+  0%, 100% { opacity: 0.22; transform: scale(0.86); }
+  50% { opacity: 0.48; transform: scale(1.08); }
+}
+
+@keyframes technique-breath-line {
+  0%, 62%, 100% { opacity: 0; transform: translateX(0) rotate(var(--line-rotate, -10deg)); }
+  12% { opacity: 0.62; }
+  44% { opacity: 0; transform: translateX(230%) rotate(var(--line-rotate, -10deg)); }
 }
 
 @keyframes breathing-effect-fade {
@@ -640,6 +946,103 @@
   0% { opacity: 0; transform: translateY(0) rotate(0deg); }
   25% { opacity: 0.8; }
   100% { opacity: 0; transform: translateY(54px) rotate(130deg); }
+}
+
+@keyframes breathing-screen-shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  18% { transform: translate3d(-6px, 3px, 0); }
+  36% { transform: translate3d(5px, -2px, 0); }
+  54% { transform: translate3d(-3px, -2px, 0); }
+  72% { transform: translate3d(2px, 1px, 0); }
+}
+
+@keyframes thunder-screen-stutter {
+  0% { opacity: 0; transform: translate3d(0, 0, 0); }
+  8% { opacity: 1; transform: translate3d(-8px, 0, 0); }
+  11% { transform: translate3d(7px, 0, 0); }
+  16% { transform: translate3d(0, 0, 0); }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes breathing-screen-flash {
+  0%, 18%, 100% { opacity: 0; }
+  8% { opacity: 0.46; }
+  14% { opacity: 0.18; }
+}
+
+@keyframes breathing-vignette-draw {
+  0% { opacity: 0; }
+  18% { opacity: 1; }
+  82% { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+
+@keyframes breathing-core-pulse {
+  0% { opacity: 0; transform: scale(0.25); }
+  22% { opacity: 0.95; transform: scale(1.14); }
+  58% { opacity: 0.58; transform: scale(1.52); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
+
+@keyframes motif-sweep {
+  0% { opacity: 0; transform: rotate(-80deg) scale(0.3); }
+  26% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(315deg) scale(1.32); }
+}
+
+@keyframes motif-spin-bloom {
+  0% { opacity: 0; transform: rotate(-90deg) scale(0.22); }
+  32% { opacity: 0.96; }
+  100% { opacity: 0; transform: rotate(260deg) scale(1.45); }
+}
+
+@keyframes motif-strike {
+  0% { opacity: 0; filter: blur(12px); transform: rotate(-26deg) translateX(-38%) scaleX(0.18); }
+  16% { opacity: 1; filter: blur(0); }
+  100% { opacity: 0; filter: blur(5px); transform: rotate(-26deg) translateX(34%) scaleX(1.18); }
+}
+
+@keyframes motif-shockwave {
+  0% { opacity: 0; transform: rotate(45deg) scale(0.22); }
+  28% { opacity: 0.95; }
+  100% { opacity: 0; transform: rotate(45deg) scale(1.55); }
+}
+
+@keyframes motif-boulder {
+  0% { opacity: 0; transform: translate3d(-120%, -80%, 0) rotate(0deg) scale(0.4); }
+  26% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(260%, 150%, 0) rotate(170deg) scale(1.18); }
+}
+
+@keyframes motif-fog {
+  0% { opacity: 0; transform: translateX(-30%) scaleX(0.5); }
+  28% { opacity: 0.86; }
+  100% { opacity: 0; transform: translateX(32%) scaleX(1.45); }
+}
+
+@keyframes motif-crystal {
+  0% { opacity: 0; transform: translate3d(-90%, 70%, 0) rotate(0deg) scale(0.2); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(140%, -120%, 0) rotate(210deg) scale(1.18); }
+}
+
+@keyframes motif-particle-burst {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg) scale(0.25); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(190%, -180%, 0) rotate(220deg) scale(1.06); }
+}
+
+@keyframes impact-pop {
+  0% { opacity: 0; transform: scale(0.16) rotate(-10deg); }
+  18% { opacity: 0.92; }
+  100% { opacity: 0; transform: scale(1.5) rotate(12deg); }
+}
+
+@keyframes stone-weight-drop {
+  0% { transform: translateY(-16px) scale(1.02); }
+  18% { transform: translateY(8px) scale(0.99); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 /* ============================================
