@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Scroll, X } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { getGreeting, getTimeOfDay } from '../lib/greetings';
@@ -139,14 +139,10 @@ export default function LaunchSequence({ onComplete }) {
   const { profile } = useAuthStore();
   const [phase, setPhase] = useState('fly'); // fly | perch | scroll | wipe
   const [feathers, setFeathers] = useState([]);
-  const didInit = useRef(false);
 
   const missions = profile ? generateMissions(profile) : [];
 
   useEffect(() => {
-    if (didInit.current) return;
-    didInit.current = true;
-
     const today = todayKey();
     const seen = localStorage.getItem('launch_seen');
     if (seen === today) {
@@ -176,6 +172,7 @@ export default function LaunchSequence({ onComplete }) {
     // Hard fallback: Force skip after max duration
     const fallback = setTimeout(() => {
       console.warn('[LaunchSequence] Hard fallback triggered');
+      localStorage.setItem('launch_seen', todayKey());
       onComplete();
     }, 5000);
 
@@ -208,14 +205,15 @@ export default function LaunchSequence({ onComplete }) {
       )}
 
       {/* Skip button */}
-      {phase === 'scroll' && (
+      {(phase === 'fly' || phase === 'perch' || phase === 'scroll') && (
         <button
           onClick={handleSkip}
-          className="absolute top-4 right-4 p-2 text-text-muted hover:text-text-primary transition-colors z-10"
+          className="absolute top-4 right-4 z-10 flex items-center gap-2 rounded-md border border-amber-700/20 bg-yellow-100/70 px-3 py-2 text-xs font-bold uppercase tracking-wider text-amber-800 shadow-lg backdrop-blur-md transition-colors hover:bg-yellow-200/80"
           aria-label="Skip intro"
           id="skip-launch"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
+          Enter now
         </button>
       )}
 
