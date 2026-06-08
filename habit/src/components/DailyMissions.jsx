@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabaseClient';
 import { Target, CheckCircle2, CircleDashed } from 'lucide-react';
 
-export default function DailyMissions() {
+export default function DailyMissions({ compactRail = false }) {
   const { user, profile, updateProfile, trackEvent } = useAuthStore();
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,15 +52,19 @@ export default function DailyMissions() {
   };
 
   if (loading || missions.length === 0) return null;
+  const claimedCount = missions.filter((mission) => mission.is_claimed).length;
 
   return (
-    <div className="mb-8 animate-fade-in">
-      <div className="flex items-center gap-2 mb-3">
-        <Target className="w-5 h-5 text-crimson" />
-        <h2 className="font-heading font-bold text-text-primary tracking-wide text-sm uppercase">Daily Bounties</h2>
+    <section className="mb-6 animate-fade-in">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <Target className="w-5 h-5 text-crimson" />
+          <h2 className="font-heading font-bold text-text-primary text-sm uppercase tracking-wide">Daily Bounties</h2>
+        </div>
+        <span className="section-label">{claimedCount}/{missions.length} Claimed</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className={compactRail ? 'mobile-card-rail' : 'grid grid-cols-1 md:grid-cols-3 gap-3'}>
         {missions.map(mission => {
           const isComplete = mission.current_count >= mission.target_count;
           const isClaimed = mission.is_claimed;
@@ -68,7 +72,9 @@ export default function DailyMissions() {
           return (
             <div
               key={mission.id}
-              className={`glass-card p-4 flex flex-col relative overflow-hidden transition-all duration-300 ${isClaimed ? 'opacity-50' : ''}`}
+              className={`interactive-card glass-card p-4 flex flex-col min-h-[150px] relative overflow-hidden transition-all duration-300 ${
+                isClaimed ? 'opacity-55' : 'glass-card-hover'
+              } ${compactRail ? 'min-w-[82vw] snap-start' : ''}`}
             >
               {isClaimed && (
                 <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center backdrop-blur-sm">
@@ -82,7 +88,7 @@ export default function DailyMissions() {
                 <h3 className="text-sm font-semibold text-text-primary pr-2 leading-tight">
                   {mission.title}
                 </h3>
-                <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md whitespace-nowrap border border-amber-400/15">
                   +{mission.reward_xp} XP
                 </span>
               </div>
@@ -93,7 +99,7 @@ export default function DailyMissions() {
                   <span>{mission.current_count} / {mission.target_count}</span>
                 </div>
 
-                <div className="w-full bg-slate-800 rounded-full h-1.5 mb-3 overflow-hidden">
+                <div className="w-full bg-amber-900/12 rounded-full h-1.5 mb-3 overflow-hidden border border-amber-700/12">
                   <div
                     className={`h-full rounded-full transition-all duration-1000 ${isComplete ? 'bg-green-500' : 'bg-crimson'}`}
                     style={{ width: `${Math.min(100, (mission.current_count / mission.target_count) * 100)}%` }}
@@ -103,9 +109,9 @@ export default function DailyMissions() {
                 <button
                   disabled={!isComplete || isClaimed}
                   onClick={() => handleClaim(mission)}
-                  className={`w-full py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${isComplete && !isClaimed
+                  className={`w-full py-2 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 ${isComplete && !isClaimed
                       ? 'bg-green-500 hover:bg-green-400 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]'
-                      : 'bg-white/5 text-text-muted cursor-not-allowed'
+                      : 'bg-amber-900/8 text-text-muted cursor-not-allowed'
                     }`}
                 >
                   {isComplete && !isClaimed ? (
@@ -119,6 +125,6 @@ export default function DailyMissions() {
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

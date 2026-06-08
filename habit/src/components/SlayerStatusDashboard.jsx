@@ -44,19 +44,20 @@ export default function SlayerStatusDashboard() {
 
   return (
     <div
-      className="glass-card p-5 md:p-6 relative overflow-hidden"
-      style={{ borderTop: `3px solid ${rankColor}` }}
+      className="glass-card p-4 md:p-5 relative overflow-hidden"
+      style={{ borderTop: `2px solid ${rankColor}` }}
     >
-      {/* Background rank glow */}
       <div
-        className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-10 pointer-events-none"
-        style={{ background: `radial-gradient(circle, ${rankColor}, transparent 70%)` }}
+        className="absolute inset-x-0 top-0 h-28 pointer-events-none opacity-70"
+        style={{
+          background: `linear-gradient(115deg, ${rankColor}18, transparent 44%), linear-gradient(180deg, rgba(255,255,255,0.04), transparent)`,
+        }}
       />
 
       {/* Corruption veil overlay */}
       {corruptionIndex > 50 && (
         <div
-          className="absolute inset-0 pointer-events-none rounded-xl"
+          className="absolute inset-0 pointer-events-none rounded-lg"
           style={{
             background: `radial-gradient(ellipse at bottom right, ${corruptColor}18, transparent 70%)`,
             animation: 'pulse 3s ease-in-out infinite',
@@ -70,7 +71,7 @@ export default function SlayerStatusDashboard() {
 
           {/* Rank Badge */}
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
+            className="w-16 h-16 rounded-lg flex items-center justify-center shrink-0"
             style={{
               background: `linear-gradient(135deg, ${rankColor}25, ${rankColor}08)`,
               border: `2px solid ${rankColor}50`,
@@ -84,10 +85,10 @@ export default function SlayerStatusDashboard() {
 
           {/* Name + Archetype */}
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-text-muted uppercase tracking-widest font-semibold mb-0.5">
+            <p className="section-label mb-1">
               {profile?.display_name || 'Slayer'}
             </p>
-            <p className="text-xl font-heading font-extrabold" style={{ color: rankColor }}>
+            <p className="text-2xl font-heading font-extrabold leading-none" style={{ color: rankColor }}>
               {currentRank.rank}
             </p>
             <p className="text-sm text-text-secondary mt-0.5">
@@ -99,25 +100,25 @@ export default function SlayerStatusDashboard() {
           </div>
 
           {/* Days trained badge */}
-          <div className="text-right shrink-0">
-            <p className="text-3xl font-heading font-extrabold" style={{ color: rankColor }}>
+          <div className="sm:text-right shrink-0 bg-yellow-100/45 border border-amber-700/15 rounded-lg px-4 py-3">
+            <p className="text-3xl font-heading font-extrabold leading-none" style={{ color: rankColor }}>
               {daysTrained}
             </p>
-            <p className="text-xs text-text-muted uppercase tracking-wider">Days Trained</p>
+            <p className="section-label !text-[9px] mt-1">Days Trained</p>
           </div>
         </div>
 
         {/* ── Stats Row ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
           {[
             { label: 'Training Eff.', value: `${consistencyPercent}%`, icon: Sparkles, color: '#a78bfa' },
             { label: 'Growth',        value: `${growthMultiplier.toFixed(2)}×`, icon: TrendingUp, color: '#34d399' },
             { label: 'Sword',         value: swordTier.split(' ').slice(-1)[0], icon: Swords, color: rankColor },
             { label: 'Corruption',    value: `${corruptionIndex}%`, icon: Skull, color: corruptColor },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="bg-white/3 rounded-xl p-3 flex items-center gap-2.5">
+            <div key={label} className="bg-yellow-100/42 border border-amber-700/15 rounded-lg p-3 flex items-center gap-2.5">
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
                 style={{ background: `${color}15` }}
               >
                 <Icon className="w-4 h-4" style={{ color }} />
@@ -141,7 +142,7 @@ export default function SlayerStatusDashboard() {
                 {progressToNextRank}%
               </span>
             </div>
-            <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+            <div className="h-2 rounded-full bg-amber-900/12 overflow-hidden border border-amber-700/12">
               <div
                 className="h-full rounded-full transition-all duration-1000"
                 style={{
@@ -164,7 +165,7 @@ export default function SlayerStatusDashboard() {
         {/* ── Corruption Warning ── */}
         {corruptionIndex > 25 && (
           <div
-            className="mt-4 rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2"
+            className="mt-4 rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2"
             style={{
               background: `${corruptColor}15`,
               border: `1px solid ${corruptColor}30`,

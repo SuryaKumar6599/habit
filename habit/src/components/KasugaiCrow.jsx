@@ -239,7 +239,7 @@ export default function KasugaiCrow() {
   return (
     <div
       className={`glass-card p-4 flex items-start gap-4 border ${tc.border} mb-4 relative overflow-hidden`}
-      style={{ background: 'rgba(13,8,24,0.8)' }}
+      style={{ background: 'rgba(13,8,24,0.82)' }}
     >
       {/* Ambient glow background */}
       <div
@@ -273,7 +273,7 @@ export default function KasugaiCrow() {
           {/* Relationship meter */}
           <div className="flex items-center gap-1 ml-auto">
             <Heart className={`w-3 h-3 ${tc.text}`} />
-            <div className="w-16 h-1.5 rounded-full bg-slate-700 overflow-hidden">
+            <div className="w-16 h-1.5 rounded-full bg-amber-900/12 overflow-hidden border border-amber-700/12">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{

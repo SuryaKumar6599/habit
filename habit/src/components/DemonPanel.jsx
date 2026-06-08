@@ -8,7 +8,7 @@ const TIER_COLORS = {
 
 function CorruptionBar({ pct, color }) {
   return (
-    <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden mt-2">
+    <div className="w-full h-1.5 rounded-full bg-amber-900/12 border border-amber-700/12 overflow-hidden mt-2">
       <div
         className="h-full rounded-full transition-all duration-700"
         style={{ width: `${pct}%`, background: color, boxShadow: `0 0 6px ${color}` }}
@@ -17,7 +17,7 @@ function CorruptionBar({ pct, color }) {
   );
 }
 
-export default function DemonPanel({ demons }) {
+export default function DemonPanel({ demons, compactRail = false }) {
   if (!demons || demons.length === 0) return null;
 
   const hasBoss = demons.some(d => d.isBoss);
@@ -37,14 +37,14 @@ export default function DemonPanel({ demons }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className={compactRail ? 'mobile-card-rail' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
         {demons.map((demon) => {
           const style = TIER_COLORS[demon.tier] ?? TIER_COLORS['Lower Moon'];
 
           return (
             <div
               key={demon.techniqueId}
-              className={`glass-card p-4 border ${style.border} relative overflow-hidden`}
+              className={`interactive-card glass-card p-4 border ${style.border} relative overflow-hidden ${compactRail ? 'min-w-[82vw] snap-start' : ''}`}
               style={{ background: style.bg }}
             >
               {/* Glow pulse for boss */}

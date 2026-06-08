@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { Sword, Shield, Flame, Zap, Wind, Droplets, Eye } from 'lucide-react';
+import { Sword, Shield, Flame, Zap, Wind, Droplets, Eye, Mail, Lock, UserRound } from 'lucide-react';
 import { seededRange } from '../lib/deterministicRandom';
 
 const AUTH_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
@@ -8,7 +8,7 @@ const AUTH_PARTICLES = Array.from({ length: 20 }, (_, i) => ({
   top: `${seededRange(i + 21, 0, 100)}%`,
   width: `${seededRange(i + 41, 2, 5)}px`,
   height: `${seededRange(i + 61, 2, 5)}px`,
-  background: ['#dc2626', '#3b82f6', '#f97316', '#eab308', '#22c55e'][i % 5],
+  background: ['#facc15', '#fde047', '#f59e0b', '#4338ca', '#fff7ad'][i % 5],
   animation: `float ${seededRange(i + 81, 4, 8)}s ease-in-out ${seededRange(i + 101, 0, 4)}s infinite, fade-in 1s ease-out`,
   opacity: seededRange(i + 121, 0.2, 0.5),
 }));
@@ -44,9 +44,11 @@ export default function FinalSelectionAuth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-abyss">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden app-shell px-4 py-8">
       {/* Background Effects */}
       <div className="particle-field">
+        <div className="app-backdrop absolute inset-0 opacity-45" />
+        <div className="zenitsu-bolts absolute inset-0 opacity-35" />
         {/* Floating Particles */}
         {AUTH_PARTICLES.map((particle, i) => (
           <div
@@ -55,50 +57,64 @@ export default function FinalSelectionAuth() {
             style={particle}
           />
         ))}
-        {/* Gradient orbs */}
-        <div
-          className="absolute w-96 h-96 rounded-full opacity-8"
-          style={{
-            background: 'radial-gradient(circle, rgba(220,38,38,0.15) 0%, transparent 70%)',
-            top: '10%',
-            right: '-10%',
-            animation: 'float 8s ease-in-out infinite',
-          }}
-        />
-        <div
-          className="absolute w-80 h-80 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)',
-            bottom: '10%',
-            left: '-5%',
-            animation: 'float 10s ease-in-out 2s infinite',
-          }}
-        />
       </div>
 
       {/* Main Card */}
-      <div className="relative z-10 w-full max-w-md mx-4 animate-slide-up">
-        <div className="glass-card p-8 md:p-10">
+      <div className="relative z-10 w-full max-w-5xl animate-slide-up grid lg:grid-cols-[0.95fr_1.05fr] gap-4 lg:gap-0">
+        <section className="hidden lg:flex glass-card rounded-r-none p-8 min-h-[620px] flex-col justify-between overflow-hidden relative">
+          <div
+            className="absolute inset-x-0 top-0 h-1"
+            style={{ background: 'linear-gradient(90deg, #facc15, #f59e0b, #4338ca)' }}
+          />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-yellow-400/24 border border-amber-700/18 text-amber-800 text-xs font-bold uppercase tracking-wider">
+              <Zap className="w-4 h-4" />
+              Thunder Breathing
+            </div>
+            <h1 className="mt-8 text-5xl font-heading font-extrabold text-text-primary leading-tight">
+              Strike once. Make today count.
+            </h1>
+            <p className="mt-4 text-sm text-text-secondary max-w-sm leading-6">
+              A bright Zenitsu-inspired command post for fast habit actions, daily bounties, rank progress, and lightning-charged momentum.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              ['Forms', 'Daily practice'],
+              ['Bounties', 'Claim XP'],
+              ['Rank', 'Earn promotion'],
+              ['Threats', 'Break misses'],
+            ].map(([label, value]) => (
+              <div key={label} className="bg-yellow-100/45 border border-amber-700/15 rounded-lg p-4">
+                <p className="section-label !text-[9px]">{label}</p>
+                <p className="mt-1 text-sm font-semibold text-text-primary">{value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="glass-card lg:rounded-l-none p-6 md:p-8 lg:p-10">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-7">
             {/* Corps Emblem */}
-            <div className="relative inline-flex items-center justify-center w-20 h-20 mb-5">
+            <div className="relative inline-flex items-center justify-center w-16 h-16 mb-5">
               <div
-                className="absolute inset-0 rounded-full"
+                className="absolute inset-0 rounded-lg"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(220,38,38,0.3), rgba(220,38,38,0.05))',
-                  border: '2px solid rgba(220,38,38,0.3)',
+                  background: 'linear-gradient(135deg, rgba(250,204,21,0.5), rgba(67,56,202,0.12))',
+                  border: '2px solid rgba(180,83,9,0.24)',
                   animation: 'breathing 3s ease-in-out infinite',
-                  color: 'rgba(220,38,38,0.4)',
+                  color: 'rgba(250,204,21,0.46)',
                 }}
               />
-              <Sword className="w-9 h-9 text-crimson relative z-10" strokeWidth={1.5} />
+              <Zap className="w-9 h-9 text-amber-600 relative z-10" strokeWidth={1.8} />
             </div>
 
             <h1
-              className="text-3xl md:text-4xl font-heading font-extrabold tracking-tight mb-2"
+              className="text-3xl md:text-4xl font-heading font-extrabold mb-2"
               style={{
-                background: 'linear-gradient(135deg, #e8e6f0, #9896a8)',
+                background: 'linear-gradient(135deg, #241504, #92400e 52%, #4338ca)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -123,7 +139,7 @@ export default function FinalSelectionAuth() {
             ].map(({ Icon, color }, i) => (
               <div
                 key={i}
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                className="w-8 h-8 rounded-md flex items-center justify-center"
                 style={{
                   background: `${color}15`,
                   border: `1px solid ${color}30`,
@@ -143,7 +159,7 @@ export default function FinalSelectionAuth() {
                 color: '#fca5a5',
               }}
             >
-              <span className="font-semibold">⚔️ Crow Dispatch:</span> {error}
+              <span className="font-semibold">Crow Dispatch:</span> {error}
             </div>
           )}
 
@@ -155,7 +171,7 @@ export default function FinalSelectionAuth() {
                 color: '#86efac',
               }}
             >
-              <span className="font-semibold">🦋 Butterfly Message:</span> {success}
+              <span className="font-semibold">Butterfly Message:</span> {success}
             </div>
           )}
 
@@ -166,14 +182,17 @@ export default function FinalSelectionAuth() {
                 <label className="block text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1.5">
                   Slayer Name
                 </label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Enter your warrior name"
-                  className="input-field"
-                  id="auth-display-name"
-                />
+                <div className="relative">
+                  <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Enter your warrior name"
+                    className="input-field pl-10"
+                    id="auth-display-name"
+                  />
+                </div>
               </div>
             )}
 
@@ -181,15 +200,18 @@ export default function FinalSelectionAuth() {
               <label className="block text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1.5">
                 Crow Address
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@corps.jp"
-                className="input-field"
-                required
-                id="auth-email"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your.email@corps.jp"
+                  className="input-field pl-10"
+                  required
+                  id="auth-email"
+                />
+              </div>
             </div>
 
             <div>
@@ -197,12 +219,13 @@ export default function FinalSelectionAuth() {
                 Corps Seal
               </label>
               <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="input-field pr-12"
+                  className="input-field pl-10 pr-12"
                   required
                   minLength={6}
                   id="auth-password"
@@ -210,8 +233,9 @@ export default function FinalSelectionAuth() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-text-muted hover:text-text-secondary hover:bg-white/5 transition-colors"
                   tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   <Eye className="w-4 h-4" />
                 </button>
@@ -244,7 +268,7 @@ export default function FinalSelectionAuth() {
               {isSignUp ? 'Already a Demon Slayer?' : 'New recruit?'}{' '}
               <button
                 onClick={toggleMode}
-                className="text-crimson-light hover:text-crimson font-semibold transition-colors"
+                className="text-indigo-700 hover:text-indigo-900 font-semibold transition-colors"
                 id="auth-toggle"
               >
                 {isSignUp ? 'Return to Corps Gate' : 'Join Final Selection'}
@@ -253,8 +277,7 @@ export default function FinalSelectionAuth() {
           </div>
         </div>
 
-        {/* Bottom tagline */}
-        <p className="text-center text-text-muted text-xs mt-6 tracking-wider">
+        <p className="lg:col-span-2 text-center text-text-muted text-xs mt-2 lg:mt-6 tracking-wider">
           鬼滅の刃 · DEMON SLAYER CORPS · 滅
         </p>
       </div>

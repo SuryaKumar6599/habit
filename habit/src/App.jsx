@@ -112,19 +112,18 @@ function App() {
 
   return (
     <PrivacyScreen>
-      <div className="min-h-screen bg-abyss relative selection:bg-crimson selection:text-white">
+      <div className="min-h-screen app-shell relative selection:bg-crimson selection:text-white">
         {/* Global Background Elements */}
-        <div className="fixed inset-0 pointer-events-none z-0 opacity-40">
-           <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-slate-deep/50 to-transparent"></div>
-        </div>
+        <div className="fixed inset-0 app-backdrop pointer-events-none z-0 opacity-45" />
+        <div className="fixed inset-0 zenitsu-bolts pointer-events-none z-0 opacity-35" />
         
         <PushPrompt />
 
         <div className="relative z-10 flex flex-col min-h-screen pb-safe-bottom">
           <Navbar />
           
-          <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8">
-            <div className="mb-8">
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-5 md:px-6 md:py-7 lg:px-8">
+            <div className="mb-6">
               <SlayerStatusDashboard />
             </div>
             

@@ -41,26 +41,26 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-abyss/80 backdrop-blur-md border-b border-white/5 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-yellow-100/78 backdrop-blur-xl border-b border-amber-700/15 shadow-[0_12px_40px_rgba(180,83,9,0.16)] pt-[env(safe-area-inset-top)]">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
 
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-crimson/20 flex items-center justify-center border border-crimson/30">
+            <div className="w-9 h-9 rounded-lg bg-crimson/14 flex items-center justify-center border border-crimson/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <Sword className="w-4 h-4 text-crimson" />
             </div>
             <div>
-              <h1 className="font-heading font-bold text-text-primary tracking-wide text-sm hidden sm:block">
+              <h1 className="font-heading font-bold text-text-primary text-sm hidden sm:block">
                 Demon Slayer Corps
               </h1>
-              <p className="text-[10px] text-text-muted uppercase tracking-widest hidden sm:block">
+              <p className="section-label !text-[9px] hidden sm:block">
                 Habit Tracker
               </p>
             </div>
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-deep/50 p-1 rounded-xl border border-white/5">
+          <nav className="hidden md:flex items-center gap-1 bg-yellow-50/55 p-1 rounded-lg border border-amber-700/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -68,10 +68,10 @@ export default function Navbar() {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-semibold transition-all ${
                     isActive
-                      ? 'bg-crimson/15 text-crimson-light border border-crimson/20 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-white/5 border border-transparent'
+                      ? 'bg-crimson/16 text-crimson-light border border-crimson/24 shadow-[inset_0_0_16px_rgba(220,38,38,0.1)]'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-yellow-200/40 border border-transparent'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -85,7 +85,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {/* Breathing Element Badge */}
             <div
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all"
               style={{
                 background: `${elementMeta.color}18`,
                 border: `1px solid ${elementMeta.color}40`,
@@ -103,14 +103,14 @@ export default function Navbar() {
                 <p className="text-xs text-text-primary font-bold">{profile?.display_name || 'Recruit'}</p>
                 <p className="text-[10px] text-text-muted uppercase tracking-wider">{rankInfo.current.rank}</p>
               </div>
-              <div className="w-8 h-8 rounded-full bg-slate-light/30 flex items-center justify-center border border-white/10 text-xs font-bold kanji-display text-text-primary">
+              <div className="w-8 h-8 rounded-lg bg-yellow-100/55 flex items-center justify-center border border-amber-700/15 text-xs font-bold kanji-display text-text-primary">
                 {rankInfo.current.kanji}
               </div>
             </div>
 
             <button
               onClick={handleSignOut}
-              className="hidden md:flex items-center justify-center w-9 h-9 rounded-lg bg-white/5 hover:bg-red-500/10 text-text-muted hover:text-red-400 transition-colors border border-transparent hover:border-red-500/20"
+              className="hidden md:flex items-center justify-center w-9 h-9 rounded-md bg-yellow-100/45 hover:bg-red-500/10 text-text-muted hover:text-red-400 transition-colors border border-transparent hover:border-red-500/20"
               title="Leave the Corps (Sign Out)"
               id="sign-out"
             >
@@ -119,8 +119,9 @@ export default function Navbar() {
 
             {/* Mobile toggle */}
             <button
-              className="md:hidden p-2 text-text-secondary hover:text-text-primary"
+              className="md:hidden p-2 rounded-md text-text-secondary hover:text-text-primary hover:bg-yellow-200/40"
               onClick={toggleMenu}
+              aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -130,10 +131,10 @@ export default function Navbar() {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-30 pt-16 bg-abyss/95 backdrop-blur-md md:hidden animate-fade-in flex flex-col">
+        <div className="fixed inset-0 z-30 pt-16 bg-yellow-50/96 backdrop-blur-xl md:hidden animate-fade-in flex flex-col">
           {/* Mobile User Card */}
-          <div className="p-4 border-b border-white/5 flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-full bg-slate-light/30 flex items-center justify-center border border-white/10 text-lg font-bold kanji-display text-text-primary">
+          <div className="p-4 border-b border-amber-700/15 flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-lg bg-yellow-100/55 flex items-center justify-center border border-amber-700/15 text-lg font-bold kanji-display text-text-primary">
               {rankInfo.current.kanji}
             </div>
             <div>
@@ -142,7 +143,7 @@ export default function Navbar() {
             </div>
             {/* Element badge on mobile */}
             <div
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold"
               style={{
                 background: `${elementMeta.color}18`,
                 border: `1px solid ${elementMeta.color}40`,
@@ -163,10 +164,10 @@ export default function Navbar() {
                   key={item.path}
                   to={item.path}
                   onClick={closeMenu}
-                  className={`flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-semibold transition-all ${
+                  className={`flex items-center gap-3 px-4 py-4 rounded-lg text-sm font-semibold transition-all ${
                     isActive
                       ? 'bg-crimson/15 text-crimson-light border border-crimson/20'
-                      : 'text-text-secondary bg-slate-deep/30 border border-white/5'
+                      : 'text-text-secondary bg-yellow-100/45 border border-amber-700/15'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -179,7 +180,7 @@ export default function Navbar() {
           <div className="p-4 mt-auto mb-4">
             <button
               onClick={() => { closeMenu(); handleSignOut(); }}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-red-500/10 text-red-400 font-semibold border border-red-500/20"
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-lg bg-red-500/10 text-red-400 font-semibold border border-red-500/20"
             >
               <LogOut className="w-5 h-5" />
               Leave the Corps

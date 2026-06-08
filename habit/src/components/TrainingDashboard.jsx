@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import useHabitStore, { BREATHING_ELEMENTS } from '../stores/habitStore';
 import { useAuthStore } from '../stores/authStore';
-import { Plus, Flame, Check, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Flame, Check, Trash2, AlertCircle, Swords, Target, Shield, Skull } from 'lucide-react';
 import AddTechniqueModal from './AddTechniqueModal';
 import KasugaiCrow from './KasugaiCrow';
 import SwordDurability from './SwordDurability';
@@ -33,6 +33,7 @@ export default function TrainingDashboard() {
   const [toast, setToast] = useState(null);
   const [showHashiraModal, setShowHashiraModal] = useState(false);
   const [completionEffect, setCompletionEffect] = useState(null);
+  const [activePanel, setActivePanel] = useState('forms');
   const toastTimer = useRef(null);
   const effectTimer = useRef(null);
 
@@ -63,6 +64,19 @@ export default function TrainingDashboard() {
   }, [user, fetchTechniques, fetchTodaysLogs, fetchAllLogs, markSessionOpen, trackEvent]);
 
   const activeDemons = computeActiveDemons(techniques, allLogs);
+  const completedTodayCount = techniques.filter((technique) =>
+    todaysLogs.some((log) => log.technique_id === technique.id)
+  ).length;
+  const completionRate = techniques.length > 0
+    ? Math.round((completedTodayCount / techniques.length) * 100)
+    : 0;
+  const supportCount = 2;
+  const panelTabs = [
+    { id: 'forms', label: 'Forms', count: techniques.length, Icon: Swords },
+    { id: 'missions', label: 'Bounties', count: null, Icon: Target },
+    { id: 'threats', label: 'Threats', count: activeDemons.length, Icon: Skull },
+    { id: 'support', label: 'Support', count: supportCount, Icon: Shield },
+  ];
 
   const showToast = useCallback((msg, type = 'error') => {
     setToast({ msg, type });
@@ -112,14 +126,177 @@ export default function TrainingDashboard() {
     return <div className="text-center py-20 text-text-muted animate-pulse">Loading forms...</div>;
   }
 
+  const renderEmptyTechniques = () => (
+    <div className="glass-card p-10 text-center border-dashed border-amber-700/18">
+      <div className="w-16 h-16 rounded-lg bg-yellow-100/45 flex items-center justify-center mx-auto mb-4 border border-amber-700/15">
+        <Flame className="w-8 h-8 text-text-muted" />
+      </div>
+      <h3 className="text-lg font-bold text-text-primary mb-2">No Techniques Yet</h3>
+      <p className="text-sm text-text-secondary max-w-md mx-auto">
+        The Demon Slayer Corps requires daily discipline. Add your first breathing technique to begin training.
+      </p>
+    </div>
+  );
+
+  const renderTechniqueCard = (technique, index = 0, isRailCard = false) => {
+    const element = BREATHING_ELEMENTS[technique.breathing_element];
+    const isCompletedToday = todaysLogs.some(l => l.technique_id === technique.id);
+    const isExecuting = executingId === technique.id;
+
+    return (
+      <div
+        key={technique.id}
+        className={`technique-card interactive-card glass-card p-4 relative overflow-hidden flex flex-col min-h-[178px] transition-all duration-300 ${
+          isCompletedToday ? 'opacity-72' : 'glass-card-hover'
+        } ${isRailCard ? 'min-w-[82vw] snap-start' : ''}`}
+        style={{
+          borderLeft: `2px solid ${element?.color}`,
+          '--technique-color': element?.color,
+          animationDelay: `${Math.min(index * 50, 260)}ms`,
+        }}
+      >
+        <div className="technique-card__idle-aura" />
+        <div className="technique-card__breath-line technique-card__breath-line--one" />
+        <div className="technique-card__breath-line technique-card__breath-line--two" />
+        <div
+          className="absolute inset-x-0 top-0 h-px pointer-events-none transition-opacity duration-700"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${element?.color}80, transparent)`,
+            opacity: isCompletedToday ? 0.3 : 1
+          }}
+        />
+
+        <div className="flex justify-between items-start gap-3 mb-3 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
+                style={{
+                  color: element?.color,
+                  background: `${element?.color}15`,
+                  border: `1px solid ${element?.color}30`
+                }}
+              >
+                {technique.breathing_element}
+              </span>
+              {technique.streak_count > 0 && (
+                <span className="flex items-center text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
+                  <Flame className="w-3 h-3 mr-1" /> {technique.streak_count} Streak
+                </span>
+              )}
+            </div>
+            <h3 className="text-lg font-bold text-text-primary leading-tight mt-2">
+              {technique.form_name}
+            </h3>
+          </div>
+
+          <button
+            onClick={() => handleDelete(technique.id)}
+            className="p-1.5 text-text-muted hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors shrink-0"
+            title="Delete Technique"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        <p className="text-xs text-text-secondary mb-4 line-clamp-2 relative z-10">
+          {technique.description}
+        </p>
+
+        <div className="mt-auto relative z-10">
+          {isCompletedToday ? (
+            <div
+              className="w-full py-2.5 rounded-md flex items-center justify-center gap-2 text-sm font-bold tracking-wide"
+              style={{
+                background: `${element?.color}15`,
+                color: element?.color,
+                border: `1px solid ${element?.color}30`,
+                boxShadow: `inset 0 0 10px ${element?.color}10`,
+              }}
+            >
+              <Check className="w-4.5 h-4.5" strokeWidth={3} />
+              Completed Today
+            </div>
+          ) : (
+            <div className="relative">
+              {rippleId === technique.id && (
+                <div
+                  className="absolute inset-0 rounded-md pointer-events-none"
+                  style={{
+                    border: `2px solid ${element?.color}`,
+                    animation: 'ripple-burst 0.6s ease-out forwards',
+                  }}
+                />
+              )}
+              <button
+                onClick={() => handleExecute(technique.id)}
+                disabled={isExecuting}
+                className={`execute-button w-full py-2.5 rounded-md flex items-center justify-center gap-2 text-sm font-bold tracking-wide transition-all ${
+                  isExecuting ? 'opacity-80' : 'hover:brightness-110'
+                }`}
+                style={{
+                  background: `linear-gradient(135deg, ${element?.color}dd, ${element?.color})`,
+                  color: '#fff',
+                  boxShadow: isExecuting
+                    ? `0 0 30px ${element?.color}70`
+                    : `0 4px 15px ${element?.color}40`,
+                  animation: isExecuting ? 'execute-burst 0.5s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+                }}
+                id={`execute-${technique.id}`}
+              >
+                <Swords className="w-4 h-4" />
+                {isExecuting ? 'Executing...' : 'Execute Form'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMobilePanel = () => {
+    if (activePanel === 'forms') {
+      return techniques.length === 0 ? renderEmptyTechniques() : (
+        <div className="mobile-card-rail">
+          {techniques.map((technique, index) => renderTechniqueCard(technique, index, true))}
+        </div>
+      );
+    }
+
+    if (activePanel === 'missions') {
+      return <DailyMissions compactRail />;
+    }
+
+    if (activePanel === 'threats') {
+      return activeDemons.length > 0 ? (
+        <DemonPanel demons={activeDemons} compactRail />
+      ) : (
+        <div className="glass-card p-6 text-center">
+          <div className="w-12 h-12 rounded-lg bg-green-400/10 border border-green-400/20 flex items-center justify-center mx-auto mb-3">
+            <Shield className="w-6 h-6 text-green-400" />
+          </div>
+          <h3 className="text-base font-heading font-bold text-text-primary">No active threats</h3>
+          <p className="text-xs text-text-muted mt-1">Your missed-day pressure is clear for now.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <KasugaiCrow />
+        <SwordDurability />
+      </div>
+    );
+  };
+
   return (
-    <div className="animate-fade-in pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="animate-fade-in pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
       <BreathingEffect key={completionEffect?.id} effect={completionEffect} />
 
       {/* Toast notification */}
       {toast && (
         <div
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold animate-slide-down shadow-xl"
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold animate-slide-down shadow-xl"
           style={{
             background: toast.type === 'warn' ? 'rgba(234,179,8,0.15)' : 'rgba(220,38,38,0.15)',
             border: `1px solid ${toast.type === 'warn' ? 'rgba(234,179,8,0.3)' : 'rgba(220,38,38,0.3)'}`,
@@ -131,23 +308,63 @@ export default function TrainingDashboard() {
           {toast.msg}
         </div>
       )}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <div className="glass-card p-4 md:p-5 mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between relative overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-crimson/0 via-crimson/50 to-crimson/0" />
         <div>
+          <p className="section-label mb-1">Training Grounds</p>
           <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-text-primary mb-1">
             Training Grounds
           </h1>
-          <p className="text-sm text-text-secondary">Master your forms through daily repetition.</p>
+          <p className="text-sm text-text-secondary">{completedTodayCount} of {techniques.length} forms completed today.</p>
         </div>
-        
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="btn-primary flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Add Technique
-        </button>
+
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="bg-yellow-100/45 border border-amber-700/15 rounded-lg px-3 py-2 min-w-24">
+              <p className="section-label !text-[9px]">Today</p>
+              <p className="font-heading font-bold text-text-primary">{completionRate}%</p>
+            </div>
+            <div className="bg-yellow-100/45 border border-amber-700/15 rounded-lg px-3 py-2 min-w-24">
+              <p className="section-label !text-[9px]">Threats</p>
+              <p className="font-heading font-bold text-text-primary">{activeDemons.length}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" /> Add Technique
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:hidden">
+        <div className="section-switcher mb-4" role="tablist" aria-label="Training dashboard sections">
+          {panelTabs.map(({ id, label, count, Icon }) => {
+            const isActive = activePanel === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActivePanel(id)}
+                className={`section-switcher__button ${isActive ? 'section-switcher__button--active' : ''}`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
+                {count !== null && <strong>{count}</strong>}
+              </button>
+            );
+          })}
+        </div>
+
+        <div key={activePanel} className="dashboard-panel">
+          {renderMobilePanel()}
+        </div>
+      </div>
+
+      <div className="hidden lg:grid grid-cols-[minmax(260px,0.9fr)_minmax(0,2fr)] gap-6">
         {/* Left Column: Stats & Companions */}
         <div className="lg:col-span-1 order-2 lg:order-1">
           <KasugaiCrow />
@@ -155,143 +372,20 @@ export default function TrainingDashboard() {
         </div>
 
         {/* Right Column: Techniques list */}
-        <div className="lg:col-span-2 order-1 lg:order-2 space-y-6">
+        <div className="order-1 lg:order-2 space-y-5">
           <DailyMissions />
 
           {activeDemons.length > 0 && (
             <div className="mb-6">
-              <DemonPanel activeDemons={activeDemons} />
+              <DemonPanel demons={activeDemons} />
             </div>
           )}
 
           {techniques.length === 0 ? (
-            <div className="glass-card p-12 text-center border-dashed border-white/10">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Flame className="w-8 h-8 text-text-muted" />
-              </div>
-              <h3 className="text-lg font-bold text-text-primary mb-2">No Techniques Yet</h3>
-              <p className="text-sm text-text-secondary max-w-md mx-auto">
-                The Demon Slayer Corps requires daily discipline. Add your first breathing technique to begin training.
-              </p>
-            </div>
+            renderEmptyTechniques()
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {techniques.map((technique) => {
-                const element = BREATHING_ELEMENTS[technique.breathing_element];
-                const isCompletedToday = todaysLogs.some(l => l.technique_id === technique.id);
-                const isExecuting = executingId === technique.id;
-                
-                return (
-                  <div 
-                    key={technique.id} 
-                    className={`technique-card glass-card p-5 relative overflow-hidden flex flex-col min-h-[160px] transition-all duration-500 ${
-                      isCompletedToday ? 'opacity-70 scale-[0.98]' : 'hover:-translate-y-1 hover:shadow-lg hover:shadow-white/5'
-                    }`}
-                    style={{
-                      borderLeft: `3px solid ${element?.color}`,
-                      '--technique-color': element?.color,
-                    }}
-                  >
-                    <div className="technique-card__idle-aura" />
-                    <div className="technique-card__breath-line technique-card__breath-line--one" />
-                    <div className="technique-card__breath-line technique-card__breath-line--two" />
-                    {/* Background glow based on element */}
-                    <div 
-                      className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-screen pointer-events-none transition-opacity duration-700"
-                      style={{
-                        background: `radial-gradient(circle, ${element?.color}20, transparent 70%)`,
-                        transform: 'translate(30%, -30%)',
-                        opacity: isCompletedToday ? 0.3 : 1
-                      }}
-                    />
-
-                    <div className="flex justify-between items-start mb-2 relative z-10">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span 
-                            className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                            style={{ 
-                              color: element?.color, 
-                              background: `${element?.color}15`,
-                              border: `1px solid ${element?.color}30`
-                            }}
-                          >
-                            {technique.breathing_element}
-                          </span>
-                          {technique.streak_count > 0 && (
-                            <span className="flex items-center text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-                              <Flame className="w-3 h-3 mr-1" /> {technique.streak_count} Streak
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-lg font-bold text-text-primary leading-tight mt-2">
-                          {technique.form_name}
-                        </h3>
-                      </div>
-                      
-                      <button 
-                        onClick={() => handleDelete(technique.id)}
-                        className="p-1.5 text-text-muted hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
-                        title="Delete Technique"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    <p className="text-xs text-text-secondary mb-4 line-clamp-2 relative z-10">
-                      {technique.description}
-                    </p>
-                    
-                    <div className="mt-auto relative z-10">
-                      {isCompletedToday ? (
-                        <div
-                          className="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold tracking-wide"
-                          style={{
-                            background: `${element?.color}15`,
-                            color: element?.color,
-                            border: `1px solid ${element?.color}30`,
-                            boxShadow: `inset 0 0 10px ${element?.color}10`,
-                          }}
-                        >
-                          <Check className="w-4.5 h-4.5" strokeWidth={3} />
-                          Total Concentration: Constant
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          {/* Ripple burst overlay */}
-                          {rippleId === technique.id && (
-                            <div
-                              className="absolute inset-0 rounded-xl pointer-events-none"
-                              style={{
-                                border: `2px solid ${element?.color}`,
-                                animation: 'ripple-burst 0.6s ease-out forwards',
-                              }}
-                            />
-                          )}
-                          <button
-                            onClick={() => handleExecute(technique.id)}
-                            disabled={isExecuting}
-                            className={`w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold tracking-wide transition-all ${
-                              isExecuting ? 'opacity-80 scale-[1.03]' : 'hover:scale-[1.02]'
-                            }`}
-                            style={{
-                              background: `linear-gradient(135deg, ${element?.color}dd, ${element?.color})`,
-                              color: '#fff',
-                              boxShadow: isExecuting
-                                ? `0 0 30px ${element?.color}70`
-                                : `0 4px 15px ${element?.color}40`,
-                              animation: isExecuting ? 'execute-burst 0.5s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
-                            }}
-                            id={`execute-${technique.id}`}
-                          >
-                            {isExecuting ? 'Executing...' : 'Execute Form'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {techniques.map((technique, index) => renderTechniqueCard(technique, index))}
             </div>
           )}
         </div>

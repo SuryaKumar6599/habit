@@ -44,8 +44,8 @@ export default function SwordDurability() {
 
   return (
     <div
-      className="glass-card p-5 mb-4 relative overflow-hidden"
-      style={{ borderLeft: `3px solid ${barColor}40` }}
+      className="glass-card p-4 mb-4 relative overflow-hidden"
+      style={{ borderLeft: `2px solid ${barColor}40` }}
     >
       {/* Ambient element glow */}
       <div
@@ -58,7 +58,7 @@ export default function SwordDurability() {
       {/* Critical vignette pulse */}
       {criticalPulse && (
         <div
-          className="absolute inset-0 pointer-events-none rounded-2xl"
+          className="absolute inset-0 pointer-events-none rounded-lg"
           style={{
             boxShadow: 'inset 0 0 30px rgba(239,68,68,0.15)',
             animation: 'vignette-pulse 3s ease-in-out infinite',
@@ -82,7 +82,7 @@ export default function SwordDurability() {
         </div>
         <div className="flex items-center gap-2">
           <span
-            className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+            className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
             style={{
               color: barColor,
               background: `${barColor}15`,
@@ -95,7 +95,7 @@ export default function SwordDurability() {
       </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-slate-800 rounded-full h-3 mb-2 border border-slate-700 relative overflow-hidden shadow-inner">
+      <div className="w-full bg-amber-900/12 rounded-full h-3 mb-2 border border-amber-700/12 relative overflow-hidden shadow-inner">
         <div
           className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
           style={{
