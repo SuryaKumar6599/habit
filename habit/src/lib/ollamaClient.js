@@ -16,8 +16,14 @@ CURRENT USER STATE:
 
 Provide a brief, immersive piece of advice or observation based on this state.`;
 
+  // In development, use the Vite proxy to avoid CORS. 
+  // In production (e.g., deployed to Vercel), the browser must directly hit the local Ollama instance.
+  const endpoint = import.meta.env.DEV 
+    ? '/api/generate' 
+    : (import.meta.env.VITE_OLLAMA_URL || 'http://127.0.0.1:11434/api/generate');
+
   try {
-    const response = await fetch('/api/generate', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
