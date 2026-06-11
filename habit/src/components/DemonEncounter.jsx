@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import useHabitStore from '../stores/habitStore';
 import { Shield, Skull, Swords, Play, Pause, RotateCcw, Trophy, Flame, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DURATIONS = [
   { label: '25 min', value: 25, demon: 'Lower Moon Six', rank: '下陸' },
@@ -25,10 +26,30 @@ export default function DemonEncounter() {
   const [status, setStatus] = useState(STATUS.IDLE);
   const [timeLeft, setTimeLeft] = useState(DURATIONS[0].value * 60);
   const [xpReward, setXpReward] = useState(null);
+  const [damageParticles, setDamageParticles] = useState([]);
   const intervalRef = useRef(null);
+  const particleIdRef = useRef(0);
 
   const totalSeconds = selectedDuration.value * 60;
   const progress = (timeLeft / totalSeconds) * 100;
+
+  // Floating damage numbers effect
+  useEffect(() => {
+    if (status === STATUS.RUNNING) {
+      const damageInterval = setInterval(() => {
+        const id = particleIdRef.current++;
+        const damage = Math.floor(Math.random() * 45) + 15; // Random damage 15-60
+        setDamageParticles((prev) => [...prev, { id, damage }]);
+        
+        // Cleanup after animation finishes
+        setTimeout(() => {
+          setDamageParticles((prev) => prev.filter(p => p.id !== id));
+        }, 1500);
+      }, 3000); // Emit every 3 seconds
+
+      return () => clearInterval(damageInterval);
+    }
+  }, [status]);
 
   // SVG circle math
   const radius = 110;
@@ -185,6 +206,27 @@ export default function DemonEncounter() {
               }}
             />
           </svg>
+
+          {/* Floating Damage Numbers */}
+          <AnimatePresence>
+            {damageParticles.map((p) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 1, y: 0, x: (Math.random() - 0.5) * 60, scale: 0.5 }}
+                animate={{ opacity: 0, y: -120 - Math.random() * 40, scale: 1.5 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+                className="absolute text-red-500 font-heading font-black text-2xl pointer-events-none z-20 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                }}
+              >
+                -{p.damage}
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           {/* Inner content */}
           <div className="absolute flex flex-col items-center justify-center text-center">

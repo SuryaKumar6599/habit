@@ -2,7 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabaseClient';
 import { useAuthStore, getRankInfo } from './authStore';
-import { dateKeyDaysAgo, previousDateKey, todayKey } from '../lib/dateKeys';
+import { dateKeyDaysAgo, previousDateKey, todayKey, toLocalDateKey } from '../lib/dateKeys';
+import { sendCrowMessage, sendCrowMessageOncePerDay, CROW_MESSAGE_TYPES } from '../lib/crowMessages';
+import useCrowStore from './crowStore';
+import { habitToTechnique, techniqueToHabitRow, mergeTechniques } from '../lib/techniqueMapper';
+import { isDateProtectedByWisteria, hadRecentMissStreak } from '../lib/trainingAnalytics';
 
 const BREATHING_ELEMENTS = {
   Water:   { color: '#3b82f6', bg: 'bg-blue-500',   label: 'Water Breathing',   icon: 'Droplets' },
@@ -60,33 +64,18 @@ const mergeLogs = (...groups) => {
   return [...logsById.values()];
 };
 
-const mirrorHabit = async (technique) => {
-  const { error } = await supabase.from('habits').upsert({
-    id: technique.id,
-    user_id: technique.user_id,
-    name: technique.form_name,
-    breathing_technique: technique.breathing_element,
-    category: technique.breathing_element,
-    target_frequency_per_week: technique.frequency === 'daily' ? 7 : 1,
-    is_active: technique.is_active ?? true,
-    created_at: technique.created_at,
-  });
+const updateTechniqueStreak = async (techniqueId, newStreak) => {
+  const { error: habitError } = await supabase
+    .from('habits')
+    .update({ streak_count: newStreak })
+    .eq('id', techniqueId);
 
-  if (error) console.warn('Could not mirror technique to habits:', error.message);
-};
-
-const mirrorActivityLog = async (activity) => {
-  const { data, error } = await supabase
-    .from('activity_logs')
-    .upsert(activity)
-    .select()
-    .single();
-
-  if (error) {
-    console.warn('Could not mirror activity log:', error.message);
-    return null;
+  if (habitError) {
+    await supabase
+      .from('breathing_techniques')
+      .update({ streak_count: newStreak })
+      .eq('id', techniqueId);
   }
-  return normalizeActivityLog(data);
 };
 
 const useHabitStore = create(
@@ -129,15 +118,29 @@ const useHabitStore = create(
       fetchTechniques: async (userId) => {
         set({ loading: true });
         try {
-          const { data, error } = await supabase
-            .from('breathing_techniques')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .order('created_at', { ascending: true });
+          const [habitsResult, legacyResult] = await Promise.all([
+            supabase
+              .from('habits')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('is_active', true)
+              .order('created_at', { ascending: true }),
+            supabase
+              .from('breathing_techniques')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('is_active', true)
+              .order('created_at', { ascending: true }),
+          ]);
 
-          if (error) throw error;
-          set({ techniques: data || [], loading: false });
+          if (habitsResult.error && legacyResult.error) throw habitsResult.error;
+          if (habitsResult.error) console.warn('Could not fetch habits:', habitsResult.error.message);
+          if (legacyResult.error) console.warn('Could not fetch legacy techniques:', legacyResult.error.message);
+
+          set({
+            techniques: mergeTechniques(habitsResult.data, legacyResult.data),
+            loading: false,
+          });
         } catch (error) {
           console.error('Error fetching techniques:', error);
           set({ loading: false });
@@ -198,24 +201,123 @@ const useHabitStore = create(
         }
       },
 
+      detectMissedDays: async (userId) => {
+        const { techniques, allLogs } = get();
+        const profile = useAuthStore.getState().profile;
+        const dailyTechniques = techniques.filter((t) => t.frequency === 'daily');
+        if (dailyTechniques.length === 0) return { missesLogged: 0 };
+
+        const today = getToday();
+        const logsSnapshot = mergeLogs(allLogs, get().todaysLogs);
+        const newMissLogs = [];
+
+        const hasCompletion = (techniqueId, dateStr) =>
+          logsSnapshot.some(
+            (log) => isCompletionLog(log) && getLogTechniqueId(log) === techniqueId && getLogDate(log) === dateStr
+          );
+
+        const hasMiss = (techniqueId, dateStr) =>
+          logsSnapshot.some(
+            (log) => log.activity_type === 'miss' && getLogTechniqueId(log) === techniqueId && getLogDate(log) === dateStr
+          );
+
+        for (const technique of dailyTechniques) {
+          const createdKey = toLocalDateKey(technique.created_at);
+
+          for (let daysAgo = 1; daysAgo <= 14; daysAgo += 1) {
+            const dateStr = dateKeyDaysAgo(daysAgo);
+            if (dateStr < createdKey) break;
+            if (isDateProtectedByWisteria(profile, dateStr)) continue;
+            if (hasCompletion(technique.id, dateStr) || hasMiss(technique.id, dateStr)) continue;
+
+            try {
+              const { data, error } = await supabase
+                .from('activity_logs')
+                .insert({
+                  user_id: userId,
+                  habit_id: technique.id,
+                  activity_type: 'miss',
+                  value: 0,
+                  logged_date: dateStr,
+                })
+                .select()
+                .single();
+
+              if (error) throw error;
+              const normalized = normalizeActivityLog(data);
+              newMissLogs.push({ log: normalized, technique });
+            } catch (error) {
+              console.warn('Could not log miss:', error.message);
+            }
+          }
+        }
+
+        if (newMissLogs.length > 0) {
+          set((state) => ({
+            allLogs: mergeLogs(state.allLogs, newMissLogs.map((entry) => entry.log)),
+          }));
+
+          const demonSpawns = newMissLogs.filter(({ technique }) => {
+            let missedStreak = 0;
+            for (let i = 1; i <= 21; i += 1) {
+              const dateStr = dateKeyDaysAgo(i);
+              const done = get().allLogs.some(
+                (log) =>
+                  isCompletionLog(log) &&
+                  getLogTechniqueId(log) === technique.id &&
+                  getLogDate(log) === dateStr
+              );
+              if (!done) missedStreak += 1;
+              else break;
+            }
+            return missedStreak >= 3;
+          });
+
+          if (demonSpawns.length > 0) {
+            const uniqueTechniques = [...new Set(demonSpawns.map((e) => e.technique.form_name))];
+            const msg = await sendCrowMessage(userId, {
+              title: 'Demon Activity Detected',
+              content: `CAW! ${uniqueTechniques.length} form${uniqueTechniques.length > 1 ? 's' : ''} spawned demons after missed training. Return to the Training Grounds immediately.`,
+              type: CROW_MESSAGE_TYPES.demon,
+            });
+            if (msg) useCrowStore.getState().prependMessage(msg);
+          } else {
+            const msg = await sendCrowMessageOncePerDay(userId, today, 'miss-summary', {
+              title: 'Missed Training Logged',
+              content: `The Corps recorded ${newMissLogs.length} missed day${newMissLogs.length > 1 ? 's' : ''}. Complete today's forms to halt corruption spread.`,
+              type: CROW_MESSAGE_TYPES.warning,
+            });
+            if (msg) useCrowStore.getState().prependMessage(msg);
+          }
+        }
+
+        const hour = new Date().getHours();
+        const progress = get().getTodayProgress();
+        if (hour >= 18 && progress.total > 0 && progress.completed < progress.total) {
+          const remaining = progress.total - progress.completed;
+          const msg = await sendCrowMessageOncePerDay(userId, today, 'streak-risk', {
+            title: 'Streak at Risk',
+            content: `CAW! ${remaining} form${remaining > 1 ? 's' : ''} remain before nightfall. The demons grow bolder with each hour.`,
+            type: CROW_MESSAGE_TYPES.warning,
+          });
+          if (msg) useCrowStore.getState().prependMessage(msg);
+        }
+
+        return { missesLogged: newMissLogs.length };
+      },
+
       addTechnique: async (userId, technique) => {
         try {
           const { data, error } = await supabase
-            .from('breathing_techniques')
-            .insert({
-              user_id: userId,
-              form_name: technique.formName,
-              description: technique.description,
-              breathing_element: technique.breathingElement,
-              frequency: technique.frequency,
-            })
+            .from('habits')
+            .insert(techniqueToHabitRow(userId, technique))
             .select()
             .single();
 
           if (error) throw error;
-          await mirrorHabit(data);
-          set((state) => ({ techniques: [...state.techniques, data] }));
-          return { data };
+          const normalized = habitToTechnique(data);
+          set((state) => ({ techniques: [...state.techniques, normalized] }));
+          return { data: normalized };
         } catch (error) {
           console.error('Error adding technique:', error);
           return { error: error.message };
@@ -225,15 +327,18 @@ const useHabitStore = create(
       deleteTechnique: async (techniqueId) => {
         try {
           const { error } = await supabase
-            .from('breathing_techniques')
+            .from('habits')
             .update({ is_active: false })
-            .eq('id', techniqueId)
-            .select()
-            .single();
+            .eq('id', techniqueId);
 
-          if (error) throw error;
-          const technique = get().techniques.find((t) => t.id === techniqueId);
-          if (technique) await mirrorHabit({ ...technique, is_active: false });
+          if (error) {
+            const { error: legacyError } = await supabase
+              .from('breathing_techniques')
+              .update({ is_active: false })
+              .eq('id', techniqueId);
+            if (legacyError) throw legacyError;
+          }
+
           set((state) => ({
             techniques: state.techniques.filter((t) => t.id !== techniqueId),
           }));
@@ -269,39 +374,50 @@ const useHabitStore = create(
 
         try {
           const { data: logData, error: logError } = await supabase
-            .from('slayer_logs')
+            .from('activity_logs')
             .insert({
-              technique_id: techniqueId,
               user_id: userId,
-              executed_at: today,
-              xp_gained: xpGained,
+              habit_id: techniqueId,
+              activity_type: 'completion',
+              value: xpGained,
+              logged_date: today,
             })
             .select()
             .single();
 
           if (logError) throw logError;
 
-          const activityLog = await mirrorActivityLog({
-            id: logData.id,
-            user_id: userId,
-            habit_id: techniqueId,
-            activity_type: 'completion',
-            value: xpGained,
-            logged_date: today,
-            created_at: logData.created_at,
-          });
+          if (hadRecentMissStreak(techniqueId, logsBeforeCompletion, today)) {
+            const { data: relapseLog } = await supabase
+              .from('activity_logs')
+              .insert({
+                user_id: userId,
+                habit_id: techniqueId,
+                activity_type: 'relapse',
+                value: 1,
+                logged_date: today,
+              })
+              .select()
+              .single();
 
-          const completedLog = activityLog || logData;
+            if (relapseLog) {
+              const normalizedRelapse = normalizeActivityLog(relapseLog);
+              set((state) => ({ allLogs: mergeLogs(state.allLogs, normalizedRelapse) }));
+
+              await sendCrowMessage(userId, {
+                title: 'Demon Vanquished',
+                content: `You returned to ${technique.form_name} after a lapse. The Corps records this recovery. Stay vigilant.`,
+                type: CROW_MESSAGE_TYPES.milestone,
+              }).then((msg) => {
+                if (msg) useCrowStore.getState().prependMessage(msg);
+              });
+            }
+          }
+
+          const completedLog = normalizeActivityLog(logData);
           const logsAfterCompletion = mergeLogs(logsBeforeCompletion, completedLog);
           const newStreak = getTechniqueStreakFromLogs(techniqueId, logsAfterCompletion, today);
-          const { error: techError } = await supabase
-            .from('breathing_techniques')
-            .update({ streak_count: newStreak })
-            .eq('id', techniqueId)
-            .select()
-            .single();
-            
-          if (techError) throw techError;
+          await updateTechniqueStreak(techniqueId, newStreak);
 
           const authStore = useAuthStore.getState();
           const profile = authStore.profile;
@@ -327,7 +443,6 @@ const useHabitStore = create(
             const profileUpdates = {
               total_xp: newXp,
               current_stamina: newStamina,
-              slayer_rank: rankInfo.current.rank,
               sword_durability: newDurability,
               crow_status: 'Happy',
               crow_relationship: newRelationship,
@@ -395,41 +510,31 @@ const useHabitStore = create(
         }
 
         try {
-          const { data: encounterData, error } = await supabase
-            .from('encounter_logs')
+          const { data: activityLog, error } = await supabase
+            .from('activity_logs')
             .insert({
               user_id: userId,
-              duration_minutes: durationMinutes,
-              xp_gained: xpGained
+              activity_type: 'focus_session',
+              value: durationMinutes,
+              logged_date: today,
             })
             .select()
             .single();
 
           if (error) throw error;
 
-          const activityLog = await mirrorActivityLog({
-            id: encounterData.id,
-            user_id: userId,
-            activity_type: 'focus_session',
-            value: durationMinutes,
-            logged_date: today,
-            created_at: encounterData.completed_at,
-          });
-          if (activityLog) {
-            set((state) => ({ allLogs: mergeLogs(state.allLogs, activityLog) }));
-          }
+          const normalized = normalizeActivityLog(activityLog);
+          set((state) => ({ allLogs: mergeLogs(state.allLogs, normalized) }));
 
           const authStore = useAuthStore.getState();
           const profile = authStore.profile;
           if (profile) {
             const newXp = profile.total_xp + xpGained;
             const newDurability = Math.min((profile.sword_durability ?? 100) + 10, 100);
-            const rankInfo = getRankInfo(newXp);
             const newRelationship = Math.min((profile.crow_relationship ?? 50) + 5, 100);
 
             const profileResult = await authStore.updateProfile({
               total_xp: newXp,
-              slayer_rank: rankInfo.current.rank,
               sword_durability: newDurability,
               crow_status: 'Happy',
               crow_relationship: newRelationship,

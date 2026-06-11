@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabaseClient';
+import { sendCrowMessageOncePerDay, sendCrowMessage, CROW_MESSAGE_TYPES } from '../lib/crowMessages';
+import useCrowStore from '../stores/crowStore';
+import { todayKey, toLocalDateKey } from '../lib/dateKeys';
 import { Target, CheckCircle2, CircleDashed } from 'lucide-react';
 
 export default function DailyMissions({ compactRail = false }) {
@@ -17,6 +20,19 @@ export default function DailyMissions({ compactRail = false }) {
 
       if (!error && data) {
         setMissions(data);
+
+        const createdToday = data.some(
+          (mission) => mission.created_at && toLocalDateKey(mission.created_at) === todayKey()
+        );
+        if (createdToday && data.length > 0) {
+          const totalXp = data.reduce((sum, mission) => sum + (mission.reward_xp || 0), 0);
+          const msg = await sendCrowMessageOncePerDay(user.id, todayKey(), 'daily-missions', {
+            title: 'Daily Bounties Posted',
+            content: `CAW! ${data.length} new bounties await at the Training Grounds. Total reward: ${totalXp} XP.`,
+            type: CROW_MESSAGE_TYPES.mission,
+          });
+          if (msg) useCrowStore.getState().prependMessage(msg);
+        }
       }
       setLoading(false);
     };
@@ -45,6 +61,13 @@ export default function DailyMissions({ compactRail = false }) {
       if (typeof trackEvent === 'function') {
         trackEvent('mission_completed', 'engagement', mission.reward_xp, { mission_title: mission.title });
       }
+
+      const msg = await sendCrowMessage(user.id, {
+        title: 'Bounty Claimed',
+        content: `"${mission.title}" complete. +${mission.reward_xp} XP added to your Corps standing.`,
+        type: CROW_MESSAGE_TYPES.mission,
+      });
+      if (msg) useCrowStore.getState().prependMessage(msg);
     } else {
       // Revert optimistic update
       setMissions(missions.map(m => m.id === mission.id ? { ...m, is_claimed: false } : m));

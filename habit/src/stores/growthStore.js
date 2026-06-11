@@ -130,6 +130,27 @@ const computeArchetype = (breathingBalance) => {
   return 'Scholar';
 };
 
+const buildActualPathFromSnapshots = (snapshots, daysTrained, currentMultiplier) => {
+  if (!snapshots?.length) return [];
+
+  const points = [...snapshots]
+    .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date))
+    .map((snapshot) => ({
+      day: snapshot.days_trained,
+      multiplier: Number(snapshot.growth_multiplier),
+    }))
+    .filter((point) => point.day > 0 && !Number.isNaN(point.multiplier));
+
+  const lastPoint = points[points.length - 1];
+  if (lastPoint && lastPoint.day < daysTrained) {
+    points.push({ day: daysTrained, multiplier: currentMultiplier });
+  }
+
+  const deduped = new Map();
+  points.forEach((point) => deduped.set(point.day, point));
+  return [...deduped.values()].sort((a, b) => a.day - b.day);
+};
+
 const computeBreathingBalance = (techniques, completionLogs) => {
   const balance = {};
   if (!techniques || techniques.length === 0) return balance;
@@ -175,6 +196,7 @@ const useGrowthStore = create((set, get) => ({
   wisteriaTokens: 0,
   loading: false,
   snapshots: [],
+  actualPathFromSnapshots: false,
 
   // Recompute everything from raw profile + logs
   recompute: (profile, allLogs, techniques) => {
@@ -228,16 +250,22 @@ const useGrowthStore = create((set, get) => ({
       d365: buildProjection(365),
     };
 
-    // Growth curve (keep to last 60 days max for perf)
+    // Growth curve (keep to last 90 days max for perf)
     const cappedDays = Math.min(daysTrained, 90);
     const idealPath = Array.from({ length: cappedDays }, (_, i) => ({
       day: i + 1,
       multiplier: +(1.01 ** (i + 1)).toFixed(3),
     }));
-    const actualPath = idealPath.map(p => ({
-      day: p.day,
-      multiplier: computeGrowthMultiplier(p.day, consistencyPercent),
-    }));
+
+    const snapshots = get().snapshots || [];
+    const snapshotPath = buildActualPathFromSnapshots(snapshots, daysTrained, growthMultiplier);
+    const actualPath = snapshotPath.length > 1
+      ? snapshotPath
+      : idealPath.map((p) => ({
+          day: p.day,
+          multiplier: computeGrowthMultiplier(p.day, consistencyPercent),
+        }));
+    const actualPathFromSnapshots = snapshotPath.length > 1;
 
     // Wisteria tokens from profile
     const wisteriaTokens = profile?.wisteria_tokens ?? 0;
@@ -247,7 +275,7 @@ const useGrowthStore = create((set, get) => ({
       corruptionIndex, corruptionLevel, swordTier,
       currentRank, nextRank, progressToNextRank,
       breathingBalance, archetype: archetypeKey, archetypeData,
-      idealPath, actualPath, projections,
+      idealPath, actualPath, actualPathFromSnapshots, projections,
       wisteriaTokens,
     });
   },

@@ -1,8 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Mail, X, CheckCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../stores/authStore';
 import useHabitStore from '../stores/habitStore';
 import useGrowthStore from '../stores/growthStore';
+import useCrowStore from '../stores/crowStore';
+import { generateCrowMessage } from '../lib/ollamaClient';
 
 // Lines keyed by relationship tier
 const LINES = {
@@ -164,9 +167,18 @@ function CrowSVG({ tier, isIntervening, showHeart }) {
   );
 }
 
+const MESSAGE_TYPE_STYLES = {
+  notice: 'text-text-secondary',
+  warning: 'text-orange-400',
+  milestone: 'text-amber-300',
+  mission: 'text-green-400',
+  demon: 'text-red-400',
+};
+
 export default function KasugaiCrow() {
-  const { profile } = useAuthStore();
+  const { profile, user } = useAuthStore();
   const { todaysLogs, sessionOpenedAt, interventionFired, markInterventionFired } = useHabitStore();
+  const { messages, fetchMessages, markAsRead, markAllRead, getUnreadCount } = useCrowStore();
 
   const relationship = profile?.crow_relationship ?? 50;
   const tier = getTier(relationship);
@@ -185,11 +197,28 @@ export default function KasugaiCrow() {
   const [isIntervening, setIsIntervening] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const [ripple, setRipple] = useState(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const unreadCount = getUnreadCount();
+
+  useEffect(() => {
+    if (user) fetchMessages(user.id);
+  }, [user, fetchMessages]);
 
   useEffect(() => {
     seenRef.current = 0;
-    setMessage(pickLine(tier, seenRef));
-  }, [tier]);
+    const fetchAI = async () => {
+      setIsThinking(true);
+      const aiMsg = await generateCrowMessage(growthData, relationship);
+      if (aiMsg) {
+        setMessage(aiMsg);
+      } else {
+        setMessage(pickLine(tier, seenRef));
+      }
+      setIsThinking(false);
+    };
+    fetchAI();
+  }, [tier]); // Re-fetch when tier changes
 
   // Procrastination detector
   useEffect(() => {
@@ -217,16 +246,27 @@ export default function KasugaiCrow() {
     if (todaysLogs.length > prevLogsLen.current) {
       setShowHeart(true);
       setRipple(true);
-      const summons = getGrowthSummons(growthData);
-      const newMsg = summons.length > 0
-        ? summons[Math.floor(Math.random() * summons.length)]
-        : pickLine(tier, seenRef);
-      setMessage(newMsg);
       setTimeout(() => setShowHeart(false), 1200);
       setTimeout(() => setRipple(false), 700);
+      
+      const fetchNewMessage = async () => {
+        setIsThinking(true);
+        const aiMsg = await generateCrowMessage(growthData, relationship);
+        if (aiMsg) {
+          setMessage(aiMsg);
+        } else {
+          const summons = getGrowthSummons(growthData);
+          const newMsg = summons.length > 0
+            ? summons[Math.floor(Math.random() * summons.length)]
+            : pickLine(tier, seenRef);
+          setMessage(newMsg);
+        }
+        setIsThinking(false);
+      };
+      fetchNewMessage();
     }
     prevLogsLen.current = todaysLogs.length;
-  }, [todaysLogs.length, tier, growthData]);
+  }, [todaysLogs.length, tier, growthData, relationship]);
 
   const tierLabel = {
     devoted: 'Bond: Devoted',
@@ -270,8 +310,22 @@ export default function KasugaiCrow() {
       <div className="flex-1 min-w-0 relative z-10">
         <div className="flex items-center gap-2 mb-1">
           <p className="text-xs text-text-muted font-bold uppercase tracking-widest">Kasugai Crow</p>
+          <button
+            type="button"
+            onClick={() => setInboxOpen((open) => !open)}
+            className="ml-auto relative p-1.5 rounded-md hover:bg-white/10 transition-colors"
+            aria-label="Open crow inbox"
+            title="Crow scrolls"
+          >
+            <Mail className="w-4 h-4 text-text-secondary" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-crimson text-[9px] font-bold text-white flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
           {/* Relationship meter */}
-          <div className="flex items-center gap-1 ml-auto">
+          <div className="flex items-center gap-1">
             <Heart className={`w-3 h-3 ${tc.text}`} />
             <div className="w-16 h-1.5 rounded-full bg-white/5 overflow-hidden border border-white/10">
               <div
@@ -287,18 +341,99 @@ export default function KasugaiCrow() {
           </div>
         </div>
 
-        <p
-          key={message}
-          className={`text-sm italic font-serif transition-all duration-300 animate-fade-in ${
-            isIntervening ? 'text-white' : 'text-text-primary'
-          }`}
-        >
-          "{message}"
-        </p>
+        <div className="relative min-h-[3rem]">
+          <AnimatePresence mode="wait">
+            {isThinking ? (
+              <motion.p
+                key="thinking"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3 }}
+                className="text-sm italic font-serif text-text-muted absolute inset-0"
+              >
+                The crow is pondering...
+              </motion.p>
+            ) : (
+              <motion.p
+                key={message}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3 }}
+                className={`text-sm italic font-serif ${
+                  isIntervening ? 'text-white' : 'text-text-primary'
+                } absolute inset-0 line-clamp-3`}
+              >
+                "{message}"
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
 
         <p className={`text-[10px] mt-1.5 font-bold uppercase tracking-wider ${tc.text}`}>
           {tierLabel}
         </p>
+
+        {inboxOpen && (
+          <div className="mt-3 border-t border-white/10 pt-3 animate-fade-in">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                Crow Scrolls
+              </p>
+              <div className="flex items-center gap-1">
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => user && markAllRead(user.id)}
+                    className="p-1 rounded hover:bg-white/10 text-text-muted"
+                    title="Mark all read"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setInboxOpen(false)}
+                  className="p-1 rounded hover:bg-white/10 text-text-muted"
+                  aria-label="Close inbox"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {messages.length === 0 ? (
+              <p className="text-xs text-text-muted italic">No scrolls yet. CAW!</p>
+            ) : (
+              <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {messages.map((scroll) => (
+                  <li key={scroll.id}>
+                    <button
+                      type="button"
+                      onClick={() => markAsRead(scroll.id)}
+                      className={`w-full text-left rounded-md px-3 py-2 border transition-colors ${
+                        scroll.is_read
+                          ? 'bg-white/3 border-white/5'
+                          : 'bg-white/8 border-white/15 hover:bg-white/10'
+                      }`}
+                    >
+                      <p className={`text-xs font-bold ${MESSAGE_TYPE_STYLES[scroll.type] || 'text-text-primary'}`}>
+                        {!scroll.is_read && (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-crimson mr-1.5 align-middle" />
+                        )}
+                        {scroll.title}
+                      </p>
+                      <p className="text-[11px] text-text-secondary mt-0.5 line-clamp-2">
+                        {scroll.content}
+                      </p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -111,16 +111,6 @@ export const useAuthStore = create((set, get) => ({
       return;
     }
 
-    // Sync rank based on XP
-    const rankInfo = getRankInfo(data.total_xp);
-    if (data.slayer_rank !== rankInfo.current.rank) {
-      await supabase
-        .from('profiles')
-        .update({ slayer_rank: rankInfo.current.rank })
-        .eq('id', userId);
-      data.slayer_rank = rankInfo.current.rank;
-    }
-
     set({ profile: data });
   },
 

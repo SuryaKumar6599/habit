@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuthStore, getRankInfo } from '../stores/authStore';
+import useGrowthStore from '../stores/growthStore';
 import { Sword, Activity, LogOut, Menu, X, Swords,
          Droplets, Flame, Zap, Wind, Mountain, CloudFog,
          Heart, Waves, Bug, Moon, Sun } from 'lucide-react';
@@ -24,7 +25,9 @@ export default function Navbar() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const rankInfo = getRankInfo(profile?.total_xp || 0);
+  const { currentRank } = useGrowthStore();
+  const xpRank = getRankInfo(profile?.total_xp || 0);
+  const displayRank = currentRank?.rank ? currentRank : xpRank.current;
   const element = profile?.breathing_element || 'Water';
   const elementMeta = ELEMENT_META[element] || ELEMENT_META.Water;
   const ElementIcon = elementMeta.Icon;
@@ -101,10 +104,14 @@ export default function Navbar() {
             <div className="hidden sm:flex items-center gap-3 text-right">
               <div>
                 <p className="text-xs text-text-primary font-bold">{profile?.display_name || 'Recruit'}</p>
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">{rankInfo.current.rank}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">{displayRank.rank}</p>
+                <p className="text-[9px] text-text-muted/70">XP: {xpRank.current.rank}</p>
               </div>
-              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 text-xs font-bold kanji-display text-text-primary">
-                {rankInfo.current.kanji}
+              <div
+                className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 text-xs font-bold kanji-display text-text-primary"
+                style={{ color: displayRank.color }}
+              >
+                {displayRank.kanji}
               </div>
             </div>
 
@@ -134,12 +141,16 @@ export default function Navbar() {
         <div className="fixed inset-0 z-30 pt-16 bg-void/95 backdrop-blur-xl md:hidden animate-fade-in flex flex-col">
           {/* Mobile User Card */}
           <div className="p-4 border-b border-white/10 flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 text-lg font-bold kanji-display text-text-primary">
-              {rankInfo.current.kanji}
+            <div
+              className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center border border-white/20 text-lg font-bold kanji-display"
+              style={{ color: displayRank.color }}
+            >
+              {displayRank.kanji}
             </div>
             <div>
               <p className="text-sm text-text-primary font-bold">{profile?.display_name || 'Recruit'}</p>
-              <p className="text-xs text-text-muted uppercase tracking-wider">Rank: {rankInfo.current.rank}</p>
+              <p className="text-xs text-text-muted uppercase tracking-wider">Training: {displayRank.rank}</p>
+              <p className="text-[10px] text-text-muted/70">Corps XP: {xpRank.current.rank}</p>
             </div>
             {/* Element badge on mobile */}
             <div

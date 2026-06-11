@@ -8,7 +8,11 @@ export default defineConfig({
     tailwindcss(),
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
+      devOptions: { enabled: true },
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Demon Slayer Corps - Habit Tracker',
@@ -32,10 +36,17 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        cleanupOutdatedCaches: true
-      }
+      },
     }),
   ],
+  server: {
+    proxy: {
+      '/api/generate': {
+        target: 'http://localhost:11434',
+        changeOrigin: true,
+      },
+    },
+  },
 });

@@ -8,9 +8,11 @@ import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import useGrowthStore from '../stores/growthStore';
 import { Leaf, ShieldCheck, Lock } from 'lucide-react';
+import { sendCrowMessage, CROW_MESSAGE_TYPES } from '../lib/crowMessages';
+import useCrowStore from '../stores/crowStore';
 
 export default function WisteriaHouse() {
-  const { profile, updateProfile } = useAuthStore();
+  const { profile, updateProfile, user } = useAuthStore();
   const { consistencyPercent, wisteriaTokens } = useGrowthStore();
   const [activating, setActivating] = useState(false);
   const [message, setMessage] = useState(null);
@@ -37,6 +39,14 @@ export default function WisteriaHouse() {
       setMessage({ text: 'Failed to activate Ward.', type: 'error' });
     } else {
       setMessage({ text: 'Wisteria Ward activated. 3 days of rest granted.', type: 'success' });
+      if (user) {
+        const msg = await sendCrowMessage(user.id, {
+          title: 'Wisteria Ward Active',
+          content: 'Recovery ward engaged. Missed days will not spawn demons for 3 days. Growth is paused, not lost.',
+          type: CROW_MESSAGE_TYPES.notice,
+        });
+        if (msg) useCrowStore.getState().prependMessage(msg);
+      }
     }
     setActivating(false);
     setTimeout(() => setMessage(null), 4000);

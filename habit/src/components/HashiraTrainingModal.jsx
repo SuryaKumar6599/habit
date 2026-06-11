@@ -4,6 +4,8 @@ import { Shield, ChevronRight, Check } from 'lucide-react';
 import useHabitStore from '../stores/habitStore';
 import { todayKey } from '../lib/dateKeys';
 import { seededUnit } from '../lib/deterministicRandom';
+import { sendCrowMessage, CROW_MESSAGE_TYPES } from '../lib/crowMessages';
+import useCrowStore from '../stores/crowStore';
 
 const HASHIRA = [
   { name: 'Giyu Tomioka', element: 'Water', quote: "Don't cry. Don't despair. Those things will do you no good.", color: '#3b82f6', glow: 'rgba(59,130,246,0.5)' },
@@ -36,10 +38,20 @@ export default function HashiraTrainingModal({ onClose }) {
   const [rewardClaimed, setRewardClaimed] = useState(false);
 
   useEffect(() => {
-    if (user && typeof trackEvent === 'function') {
+    if (!user) return;
+
+    if (typeof trackEvent === 'function') {
       trackEvent('hashira_spawned', 'encounter', 1, { hashira_name: hashira.name });
     }
-  }, [user, trackEvent, hashira.name]);
+
+    sendCrowMessage(user.id, {
+      title: `${hashira.name} Has Arrived`,
+      content: `"${hashira.quote}" — A Hashira seeks you at the Training Grounds.`,
+      type: CROW_MESSAGE_TYPES.milestone,
+    }).then((msg) => {
+      if (msg) useCrowStore.getState().prependMessage(msg);
+    });
+  }, [user, trackEvent, hashira.name, hashira.quote]);
 
   const handleClaimReward = async () => {
     if (!user || rewardClaimed) return;

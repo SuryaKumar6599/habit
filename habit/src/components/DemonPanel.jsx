@@ -1,4 +1,4 @@
-import { Skull, AlertTriangle, Swords } from 'lucide-react';
+import { Skull, AlertTriangle, Swords, Target } from 'lucide-react';
 
 const TIER_COLORS = {
   'Lower Moon':         { text: 'text-violet-400', border: 'border-violet-500/40', bg: '#6366f115', glow: '#6366f1' },
@@ -17,7 +17,7 @@ function CorruptionBar({ pct, color }) {
   );
 }
 
-export default function DemonPanel({ demons, compactRail = false }) {
+export default function DemonPanel({ demons, compactRail = false, onVanquish }) {
   if (!demons || demons.length === 0) return null;
 
   const hasBoss = demons.some(d => d.isBoss);
@@ -87,6 +87,22 @@ export default function DemonPanel({ demons, compactRail = false }) {
                 <p className="text-[10px] text-red-400 font-bold mt-2 relative z-10">
                   Complete a 90-min Encounter to banish this demon.
                 </p>
+              )}
+
+              {onVanquish && (
+                <button
+                  type="button"
+                  onClick={() => onVanquish(demon.techniqueId)}
+                  className="mt-3 w-full py-2 rounded-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all hover:brightness-110 relative z-10"
+                  style={{
+                    background: `${style.glow}20`,
+                    border: `1px solid ${style.glow}50`,
+                    color: style.glow,
+                  }}
+                >
+                  <Target className="w-3.5 h-3.5" />
+                  Train {demon.techniqueName}
+                </button>
               )}
             </div>
           );

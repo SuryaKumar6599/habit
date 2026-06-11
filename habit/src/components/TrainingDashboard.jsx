@@ -3,6 +3,7 @@ import useHabitStore, { BREATHING_ELEMENTS } from '../stores/habitStore';
 import { useAuthStore } from '../stores/authStore';
 import { Plus, Flame, Check, Trash2, AlertCircle, Swords, Target, Shield, Skull } from 'lucide-react';
 import AddTechniqueModal from './AddTechniqueModal';
+import CorpsSettings from './CorpsSettings';
 import KasugaiCrow from './KasugaiCrow';
 import SwordDurability from './SwordDurability';
 import DemonPanel from './DemonPanel';
@@ -22,6 +23,7 @@ export default function TrainingDashboard() {
     fetchTechniques,
     fetchTodaysLogs,
     fetchAllLogs,
+    detectMissedDays,
     executeForm,
     deleteTechnique,
     markSessionOpen,
@@ -34,14 +36,20 @@ export default function TrainingDashboard() {
   const [showHashiraModal, setShowHashiraModal] = useState(false);
   const [completionEffect, setCompletionEffect] = useState(null);
   const [activePanel, setActivePanel] = useState('forms');
+  const [highlightTechniqueId, setHighlightTechniqueId] = useState(null);
   const toastTimer = useRef(null);
   const effectTimer = useRef(null);
+  const techniqueRefs = useRef({});
 
   useEffect(() => {
     if (user) {
       fetchTechniques(user.id);
       fetchTodaysLogs(user.id);
-      fetchAllLogs(user.id);
+      const loadData = async () => {
+        await fetchAllLogs(user.id);
+        await detectMissedDays(user.id);
+      };
+      loadData();
       markSessionOpen();
       // Track app_open analytics
       if (typeof trackEvent === 'function') {
@@ -61,7 +69,17 @@ export default function TrainingDashboard() {
       if (toastTimer.current) clearTimeout(toastTimer.current);
       if (effectTimer.current) clearTimeout(effectTimer.current);
     };
-  }, [user, fetchTechniques, fetchTodaysLogs, fetchAllLogs, markSessionOpen, trackEvent]);
+  }, [user, fetchTechniques, fetchTodaysLogs, fetchAllLogs, detectMissedDays, markSessionOpen, trackEvent]);
+
+  const handleVanquishDemon = useCallback((techniqueId) => {
+    setActivePanel('forms');
+    setHighlightTechniqueId(techniqueId);
+    const card = techniqueRefs.current[techniqueId];
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    setTimeout(() => setHighlightTechniqueId(null), 3000);
+  }, []);
 
   const activeDemons = computeActiveDemons(techniques, allLogs);
   const completedTodayCount = techniques.filter((technique) =>
@@ -70,7 +88,7 @@ export default function TrainingDashboard() {
   const completionRate = techniques.length > 0
     ? Math.round((completedTodayCount / techniques.length) * 100)
     : 0;
-  const supportCount = 2;
+  const supportCount = 3;
   const panelTabs = [
     { id: 'forms', label: 'Forms', count: techniques.length, Icon: Swords },
     { id: 'missions', label: 'Bounties', count: null, Icon: Target },
@@ -146,9 +164,12 @@ export default function TrainingDashboard() {
     return (
       <div
         key={technique.id}
+        ref={(el) => { techniqueRefs.current[technique.id] = el; }}
         className={`technique-card interactive-card glass-card p-4 relative overflow-hidden flex flex-col min-h-[178px] transition-all duration-300 ${
           isCompletedToday ? 'opacity-72' : 'glass-card-hover'
-        } ${isRailCard ? 'min-w-[82vw] snap-start' : ''}`}
+        } ${isRailCard ? 'min-w-[82vw] snap-start' : ''} ${
+          highlightTechniqueId === technique.id ? 'ring-2 ring-crimson/60' : ''
+        }`}
         style={{
           borderLeft: `2px solid ${element?.color}`,
           '--technique-color': element?.color,
@@ -269,7 +290,7 @@ export default function TrainingDashboard() {
 
     if (activePanel === 'threats') {
       return activeDemons.length > 0 ? (
-        <DemonPanel demons={activeDemons} compactRail />
+        <DemonPanel demons={activeDemons} compactRail onVanquish={handleVanquishDemon} />
       ) : (
         <div className="glass-card p-6 text-center">
           <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3">
@@ -284,6 +305,7 @@ export default function TrainingDashboard() {
     return (
       <div className="space-y-4">
         <KasugaiCrow />
+        <CorpsSettings />
         <SwordDurability />
       </div>
     );
@@ -366,8 +388,9 @@ export default function TrainingDashboard() {
 
       <div className="hidden lg:grid grid-cols-[minmax(260px,0.9fr)_minmax(0,2fr)] gap-6">
         {/* Left Column: Stats & Companions */}
-        <div className="lg:col-span-1 order-2 lg:order-1">
+        <div className="lg:col-span-1 order-2 lg:order-1 space-y-4">
           <KasugaiCrow />
+          <CorpsSettings />
           <SwordDurability />
         </div>
 
@@ -377,7 +400,7 @@ export default function TrainingDashboard() {
 
           {activeDemons.length > 0 && (
             <div className="mb-6">
-              <DemonPanel demons={activeDemons} />
+              <DemonPanel demons={activeDemons} onVanquish={handleVanquishDemon} />
             </div>
           )}
 

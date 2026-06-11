@@ -97,4 +97,4 @@ The app validates `VITE_SUPABASE_PROJECT_REF` against the host in `VITE_SUPABASE
 
 ## Important Schema Note
 
-This project still contains compatibility paths for older tables (`breathing_techniques`, `slayer_logs`, `encounter_logs`) while mirroring data into newer tables (`habits`, `activity_logs`). Keep `supabase_schema.sql` and the client stores in sync when changing habit or mission behavior.
+Run `supabase_migration_v2.sql` after `supabase_schema.sql` to enable primary writes to `habits` and `activity_logs`. The client still reads legacy tables (`breathing_techniques`, `slayer_logs`, `encounter_logs`) for backward compatibility with existing data.

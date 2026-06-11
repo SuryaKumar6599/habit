@@ -13,13 +13,14 @@ import HashiraPathSimulator from './HashiraPathSimulator';
 import BreathingBalanceChart from './BreathingBalanceChart';
 import CorruptionIndex from './CorruptionIndex';
 import WisteriaHouse from './WisteriaHouse';
+import CorpsSettings from './CorpsSettings';
 import useGrowthStore from '../stores/growthStore';
 import { dateKeyDaysAgo } from '../lib/dateKeys';
 
 export default function ButterflyMansionAnalytics() {
   const { user, profile } = useAuthStore();
   const { allLogs, fetchAllLogs, techniques } = useHabitStore();
-  const { recompute, fetchSnapshots } = useGrowthStore();
+  const { recompute, fetchSnapshots, snapshots } = useGrowthStore();
 
   useEffect(() => {
     if (user) {
@@ -32,7 +33,7 @@ export default function ButterflyMansionAnalytics() {
     if (profile && techniques) {
       recompute(profile, allLogs, techniques);
     }
-  }, [profile, allLogs, techniques, recompute]);
+  }, [profile, allLogs, techniques, snapshots, recompute]);
 
   // Heatmap helpers (legacy — preserved)
   const processStats = () => {
@@ -86,8 +87,11 @@ export default function ButterflyMansionAnalytics() {
         <CorruptionIndex />
       </div>
 
-      {/* ── Wisteria House ── */}
-      <WisteriaHouse />
+      {/* ── Wisteria House + Settings ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <WisteriaHouse />
+        <CorpsSettings />
+      </div>
 
       {/* ── Legacy Training Heatmap ── */}
       <div className="glass-card p-6">

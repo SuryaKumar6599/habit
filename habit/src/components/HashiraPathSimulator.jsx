@@ -14,9 +14,13 @@ function PathChart({ idealPath, actualPath, width = 600, height = 200 }) {
   const allMultipliers = [...idealPath, ...actualPath].map(p => p.multiplier);
   const maxM = Math.max(...allMultipliers, 1.5);
   const minM = 1;
-  const days  = idealPath.length;
+  const maxDay = Math.max(
+    idealPath[idealPath.length - 1]?.day || 1,
+    actualPath[actualPath.length - 1]?.day || 1,
+    1
+  );
 
-  const toX = (day) => ((day - 1) / Math.max(days - 1, 1)) * width;
+  const toX = (day) => ((day - 1) / Math.max(maxDay - 1, 1)) * width;
   const toY = (m)   => height - ((m - minM) / (maxM - minM)) * height;
 
   const pathD = (pts) => pts
@@ -83,7 +87,7 @@ function ProjectionCard({ label, data }) {
 
 export default function HashiraPathSimulator() {
   const {
-    idealPath, actualPath, projections,
+    idealPath, actualPath, actualPathFromSnapshots, projections,
     daysTrained, consistencyPercent, growthMultiplier,
   } = useGrowthStore();
 
@@ -133,11 +137,12 @@ export default function HashiraPathSimulator() {
             <span className="w-6 border-t-2 border-dashed border-blue-400 inline-block"/> Ideal Path (1%/day)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-6 border-t-2 border-white inline-block"/> Your Path
+            <span className="w-6 border-t-2 border-white inline-block"/>
+            {actualPathFromSnapshots ? 'Recorded Path' : 'Your Path'}
           </span>
         </div>
 
-        {idealPath.length > 1 ? (
+        {idealPath.length > 1 || actualPath.length > 1 ? (
           <PathChart idealPath={idealPath} actualPath={actualPath} />
         ) : (
           <div className="h-40 flex items-center justify-center text-text-muted text-sm">

@@ -3,29 +3,38 @@
  * The primary RPG identity card. Shows: Rank, Archetype, Sword Tier,
  * Growth Multiplier, Training Efficiency, next-rank progress, and Corruption.
  */
-import { useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
+import { useEffect, useRef } from 'react';
+import { useAuthStore, getRankInfo } from '../stores/authStore';
 import useHabitStore from '../stores/habitStore';
 import useGrowthStore from '../stores/growthStore';
+import { supabase } from '../lib/supabaseClient';
+import { todayKey } from '../lib/dateKeys';
+import HashiraExamBanner from './HashiraExamBanner';
+import { sendCrowMessageOncePerDay, CROW_MESSAGE_TYPES } from '../lib/crowMessages';
+import useCrowStore from '../stores/crowStore';
+import { getWeekRecapStats } from '../lib/trainingAnalytics';
 import { TrendingUp, Swords, Sparkles, Skull, ChevronRight } from 'lucide-react';
 
 export default function SlayerStatusDashboard() {
-  const { profile, user } = useAuthStore();
+  const { profile, user, fetchProfile } = useAuthStore();
   const { techniques, allLogs, fetchAllLogs } = useHabitStore();
   const {
-    recompute, syncProfileMetrics,
+    recompute, syncProfileMetrics, saveSnapshot, fetchSnapshots, snapshots,
     daysTrained, consistencyPercent, growthMultiplier,
     corruptionIndex, corruptionLevel, swordTier,
     currentRank, nextRank, progressToNextRank,
     archetypeData,
   } = useGrowthStore();
+  const maintenanceRan = useRef(false);
+  const weeklyRecapRan = useRef(false);
+  const xpRank = getRankInfo(profile?.total_xp || 0);
 
   // Recompute whenever data changes
   useEffect(() => {
     if (profile && techniques) {
       recompute(profile, allLogs, techniques);
     }
-  }, [profile, allLogs, techniques, recompute]);
+  }, [profile, allLogs, techniques, snapshots, recompute]);
 
   // Sync back to DB once computed
   useEffect(() => {
@@ -38,6 +47,63 @@ export default function SlayerStatusDashboard() {
   useEffect(() => {
     if (user) fetchAllLogs(user.id);
   }, [user, fetchAllLogs]);
+
+  // Daily maintenance: wisteria eligibility, ward expiry, growth snapshots
+  useEffect(() => {
+    if (!user || maintenanceRan.current) return;
+    maintenanceRan.current = true;
+
+    const runMaintenance = async () => {
+      const tokensBefore = profile?.wisteria_tokens ?? 0;
+
+      await supabase.rpc('expire_wisteria_wards');
+      await supabase.rpc('check_wisteria_eligibility', { target_user_id: user.id });
+      await fetchProfile(user.id);
+
+      const tokensAfter = useAuthStore.getState().profile?.wisteria_tokens ?? 0;
+      if (tokensAfter > tokensBefore) {
+        const msg = await sendCrowMessageOncePerDay(user.id, todayKey(), 'wisteria-token', {
+          title: 'Wisteria Ward Earned',
+          content: `Your consistent training earned a Wisteria recovery ward (${tokensAfter}/3). Visit the Butterfly Mansion to activate rest.`,
+          type: CROW_MESSAGE_TYPES.milestone,
+        });
+        if (msg) useCrowStore.getState().prependMessage(msg);
+      }
+
+      const snapshotKey = `growth-snapshot-${user.id}`;
+      if (localStorage.getItem(snapshotKey) !== todayKey()) {
+        await saveSnapshot(user.id);
+        localStorage.setItem(snapshotKey, todayKey());
+      }
+      await fetchSnapshots(user.id);
+    };
+
+    runMaintenance();
+  }, [user, fetchProfile, saveSnapshot, fetchSnapshots, profile?.wisteria_tokens]);
+
+  // Monday weekly training recap
+  useEffect(() => {
+    if (!user || !techniques.length || weeklyRecapRan.current) return;
+    if (new Date().getDay() !== 1) return;
+
+    weeklyRecapRan.current = true;
+
+    const sendRecap = async () => {
+      const stats = getWeekRecapStats(techniques, allLogs);
+      const msg = await sendCrowMessageOncePerDay(user.id, todayKey(), 'weekly-recap', {
+        title: 'Weekly Training Report',
+        content: `Last 7 days: ${stats.completions}/${stats.expected} forms (${stats.percentage}%). ${
+          stats.percentage >= 80
+            ? 'The Hashira have been informed of your discipline.'
+            : 'The demons gained ground. Train harder this week.'
+        }`,
+        type: CROW_MESSAGE_TYPES.milestone,
+      });
+      if (msg) useCrowStore.getState().prependMessage(msg);
+    };
+
+    sendRecap();
+  }, [user, techniques, allLogs]);
 
   const rankColor = currentRank.color;
   const corruptColor = corruptionLevel?.color || '#22c55e';
@@ -93,6 +159,9 @@ export default function SlayerStatusDashboard() {
             </p>
             <p className="text-sm text-text-secondary mt-0.5">
               {archetypeData?.name || 'Path Unforged'} · {swordTier}
+            </p>
+            <p className="text-[10px] text-text-muted mt-1">
+              Corps XP Rank: {xpRank.current.rank} · {profile?.total_xp?.toLocaleString() || 0} XP
             </p>
             {archetypeData && (
               <p className="text-xs text-text-muted mt-1 italic">{archetypeData.desc}</p>
@@ -161,6 +230,8 @@ export default function SlayerStatusDashboard() {
             </p>
           </div>
         )}
+
+        <HashiraExamBanner />
 
         {/* ── Corruption Warning ── */}
         {corruptionIndex > 25 && (

@@ -22,6 +22,10 @@ const hashName = (str) => {
  * Output:
  *   array of demon objects
  */
+const getLogDate = (log) => log.executed_at || log.logged_date;
+const getLogTechniqueId = (log) => log.technique_id || log.habit_id;
+const isCompletionLog = (log) => !log.activity_type || log.activity_type === 'completion';
+
 export const computeActiveDemons = (techniques, allLogs) => {
   const demons = [];
 
@@ -31,7 +35,7 @@ export const computeActiveDemons = (techniques, allLogs) => {
     for (let i = 1; i <= 21; i++) {
       const dateStr = dateKeyDaysAgo(i);
       const done = allLogs.some(
-        (l) => l.technique_id === t.id && l.executed_at === dateStr
+        (l) => isCompletionLog(l) && getLogTechniqueId(l) === t.id && getLogDate(l) === dateStr
       );
       if (!done) missedStreak++;
       else break;

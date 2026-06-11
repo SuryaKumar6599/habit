@@ -15,6 +15,7 @@ import PushPrompt from './components/PushPrompt';
 import { applyElementTheme } from './lib/worldState';
 import { getTimeOfDay } from './lib/greetings';
 import useHabitStore from './stores/habitStore';
+import { initializeNotifications } from './lib/notifications';
 
 function App() {
   const { user, profile, loading, initialize: initAuth, signOut } = useAuthStore();
@@ -44,6 +45,7 @@ function App() {
 
   useEffect(() => {
     initSecurity();
+    initializeNotifications();
     const cleanup = initAuth();
     return () => {
       if (cleanup) cleanup();
