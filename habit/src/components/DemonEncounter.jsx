@@ -1,57 +1,88 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import useHabitStore from '../stores/habitStore';
-import { Shield, Skull, Swords, Play, Pause, RotateCcw, Trophy, Flame, Zap } from 'lucide-react';
+import useCampaignStore from '../stores/campaignStore';
+import { Shield, Skull, Swords, Play, Pause, RotateCcw, Trophy, Flame, Zap, AlertTriangle, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const DURATIONS = [
-  { label: '25 min', value: 25, demon: 'Lower Moon Six', rank: '下陸' },
-  { label: '45 min', value: 45, demon: 'Lower Moon Three', rank: '下参' },
-  { label: '60 min', value: 60, demon: 'Upper Moon Six', rank: '上陸' },
-];
 
 const STATUS = {
   IDLE: 'idle',
   RUNNING: 'running',
   PAUSED: 'paused',
+  RESTING: 'resting',
   VICTORY: 'victory',
   DEFEATED: 'defeated',
 };
 
+// Math Models
+const calculateQuadratic = (n) => Math.round(2.5 * (n * n) + 2.5 * n);
+const calculateExponential = (n) => Math.round(5 * Math.pow(1.5, n - 1));
+
 export default function DemonEncounter() {
   const { user } = useAuthStore();
   const { finishEncounter } = useHabitStore();
+  const { activeCampaign, fetchActiveCampaign, spawnCampaign, damageActiveCampaign, loading: campaignLoading } = useCampaignStore();
 
-  const [selectedDuration, setSelectedDuration] = useState(DURATIONS[0]);
+  const [level, setLevel] = useState(3);
+  const [model, setModel] = useState('quadratic');
   const [status, setStatus] = useState(STATUS.IDLE);
-  const [timeLeft, setTimeLeft] = useState(DURATIONS[0].value * 60);
+  
+  const [totalDuration, setTotalDuration] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(30 * 60);
+  const [currentPhase, setCurrentPhase] = useState(1);
+  const [totalPhases, setTotalPhases] = useState(1);
+  
   const [xpReward, setXpReward] = useState(null);
   const [damageParticles, setDamageParticles] = useState([]);
+  
   const intervalRef = useRef(null);
   const particleIdRef = useRef(0);
 
-  const totalSeconds = selectedDuration.value * 60;
-  const progress = (timeLeft / totalSeconds) * 100;
+  // Initialize or fetch active campaign
+  useEffect(() => {
+    if (user && !activeCampaign) {
+      fetchActiveCampaign(user.id);
+    }
+  }, [user, activeCampaign, fetchActiveCampaign]);
+
+  // Update calculated duration when level or model changes
+  useEffect(() => {
+    if (status !== STATUS.IDLE) return;
+    const duration = model === 'quadratic' ? calculateQuadratic(level) : calculateExponential(level);
+    
+    // Safety Rule: Partition > 120m into 90m chunks with 15m breaks
+    if (duration > 120) {
+      const phases = Math.ceil(duration / 90);
+      setTotalPhases(phases);
+      setTotalDuration(Math.round(duration / phases));
+      setTimeLeft(Math.round(duration / phases) * 60);
+    } else {
+      setTotalPhases(1);
+      setTotalDuration(duration);
+      setTimeLeft(duration * 60);
+    }
+    setCurrentPhase(1);
+  }, [level, model, status]);
 
   // Floating damage numbers effect
   useEffect(() => {
     if (status === STATUS.RUNNING) {
       const damageInterval = setInterval(() => {
         const id = particleIdRef.current++;
-        const damage = Math.floor(Math.random() * 45) + 15; // Random damage 15-60
+        // Damage scales slightly with level
+        const damage = Math.floor(Math.random() * (20 + level * 5)) + 15;
         setDamageParticles((prev) => [...prev, { id, damage }]);
         
-        // Cleanup after animation finishes
         setTimeout(() => {
           setDamageParticles((prev) => prev.filter(p => p.id !== id));
         }, 1500);
-      }, 3000); // Emit every 3 seconds
+      }, 3000);
 
       return () => clearInterval(damageInterval);
     }
-  }, [status]);
+  }, [status, level]);
 
-  // SVG circle math
+  const progress = ((totalDuration * 60 - timeLeft) / (totalDuration * 60)) * 100;
   const radius = 110;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
@@ -66,15 +97,30 @@ export default function DemonEncounter() {
     setTimeLeft((prev) => {
       if (prev <= 1) {
         clearInterval(intervalRef.current);
-        setStatus(STATUS.VICTORY);
-        return 0;
+        
+        if (status === STATUS.RUNNING) {
+          if (currentPhase < totalPhases) {
+            // Need a rest break
+            setStatus(STATUS.RESTING);
+            return 15 * 60; // 15 minute rest
+          } else {
+            // Full encounter complete
+            setStatus(STATUS.VICTORY);
+            return 0;
+          }
+        } else if (status === STATUS.RESTING) {
+          // Break over, start next phase
+          setCurrentPhase(p => p + 1);
+          setStatus(STATUS.RUNNING);
+          return totalDuration * 60;
+        }
       }
       return prev - 1;
     });
-  }, []);
+  }, [status, currentPhase, totalPhases, totalDuration]);
 
   useEffect(() => {
-    if (status === STATUS.RUNNING) {
+    if (status === STATUS.RUNNING || status === STATUS.RESTING) {
       intervalRef.current = setInterval(tick, 1000);
     } else {
       clearInterval(intervalRef.current);
@@ -82,25 +128,35 @@ export default function DemonEncounter() {
     return () => clearInterval(intervalRef.current);
   }, [status, tick]);
 
-  // Save to DB on victory
+  // Handle victory logic (DB writes)
   useEffect(() => {
     if (status === STATUS.VICTORY && user) {
-      finishEncounter(user.id, selectedDuration.value).then((result) => {
+      const totalSessionMinutes = model === 'quadratic' ? calculateQuadratic(level) : calculateExponential(level);
+      
+      // Award XP
+      finishEncounter(user.id, totalSessionMinutes).then((result) => {
         if (result && !result.error) {
           setXpReward(result.xpGained);
         }
       });
-    }
-  }, [status, user, finishEncounter, selectedDuration.value]);
 
-  const handleStart = () => {
+      // Deal massive damage to the active campaign boss
+      if (activeCampaign) {
+        const damageToDeal = totalSessionMinutes * 10; // 10 damage per minute of focus
+        damageActiveCampaign(user.id, damageToDeal);
+      }
+    }
+  }, [status, user, finishEncounter, activeCampaign, damageActiveCampaign, level, model]);
+
+  const handleStart = async () => {
+    if (!activeCampaign && user) {
+      // Auto-spawn a campaign if they don't have one
+      await spawnCampaign(user.id);
+    }
     setStatus(STATUS.RUNNING);
   };
 
-  const handlePause = () => {
-    setStatus(STATUS.PAUSED);
-  };
-
+  const handlePause = () => setStatus(STATUS.PAUSED);
   const handleAbandon = () => {
     clearInterval(intervalRef.current);
     setStatus(STATUS.DEFEATED);
@@ -108,30 +164,38 @@ export default function DemonEncounter() {
 
   const handleReset = () => {
     clearInterval(intervalRef.current);
-    setTimeLeft(selectedDuration.value * 60);
+    const duration = model === 'quadratic' ? calculateQuadratic(level) : calculateExponential(level);
+    if (duration > 120) {
+      const phases = Math.ceil(duration / 90);
+      setTotalPhases(phases);
+      setTotalDuration(Math.round(duration / phases));
+      setTimeLeft(Math.round(duration / phases) * 60);
+    } else {
+      setTotalPhases(1);
+      setTotalDuration(duration);
+      setTimeLeft(duration * 60);
+    }
+    setCurrentPhase(1);
     setStatus(STATUS.IDLE);
     setXpReward(null);
   };
 
-  const handleSelectDuration = (dur) => {
-    if (status !== STATUS.IDLE) return;
-    setSelectedDuration(dur);
-    setTimeLeft(dur.value * 60);
-  };
-
   const isRunning = status === STATUS.RUNNING;
   const isIdle = status === STATUS.IDLE;
+  const isResting = status === STATUS.RESTING;
 
-  // Color based on time remaining
   const getColor = () => {
     if (status === STATUS.VICTORY) return '#22c55e';
     if (status === STATUS.DEFEATED) return '#6b7280';
+    if (status === STATUS.RESTING) return '#3b82f6';
     if (progress > 50) return '#ef4444';
     if (progress > 25) return '#f97316';
     return '#ffffff';
   };
 
   const arcColor = getColor();
+  const bossName = activeCampaign ? activeCampaign.demon_name : 'Unknown Demon';
+  const bossHpDisplay = activeCampaign ? `${activeCampaign.current_hp} / ${activeCampaign.max_hp} HP` : 'Summoning...';
 
   return (
     <div className="animate-fade-in pb-20 md:pb-0">
@@ -139,31 +203,68 @@ export default function DemonEncounter() {
         <div>
           <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-text-primary mb-1 flex items-center gap-3">
             <Swords className="w-8 h-8 text-crimson" />
-            Demon Encounter
+            Demon Campaign
           </h1>
           <p className="text-sm text-text-secondary">
-            Enter a focused battle. Do not break concentration until the demon is slain.
+            Execute Total Concentration. Deal damage to the active boss.
           </p>
         </div>
+        
+        {/* Campaign Status Card */}
+        {activeCampaign && (
+          <div className="glass-card px-4 py-2 flex items-center gap-4 bg-red-900/10 border-red-500/20">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-red-400">Current Target</p>
+              <p className="font-heading font-bold">{activeCampaign.demon_name}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-bold uppercase text-text-muted">Boss HP</p>
+              <p className="text-sm font-mono">{bossHpDisplay}</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Duration Selector */}
+      {/* Configuration */}
       {isIdle && (
-        <div className="flex gap-3 justify-center mb-10">
-          {DURATIONS.map((dur) => (
+        <div className="flex flex-col items-center gap-6 mb-10">
+          <div className="flex gap-4 p-1 bg-white/5 rounded-xl border border-white/10">
             <button
-              key={dur.value}
-              onClick={() => handleSelectDuration(dur)}
-              className={`px-5 py-3 rounded-xl text-sm font-bold border transition-all ${
-                selectedDuration.value === dur.value
-                  ? 'bg-crimson/20 border-crimson/40 text-crimson-light shadow-[0_0_15px_rgba(220,38,38,0.2)]'
-                  : 'border-white/10 text-text-secondary hover:bg-white/5 bg-slate-deep/30'
-              }`}
+              onClick={() => setModel('quadratic')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${model === 'quadratic' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
             >
-              <div className="text-lg font-mono font-extrabold">{dur.label}</div>
-              <div className="text-[10px] uppercase tracking-widest opacity-70">{dur.demon}</div>
+              Standard (Quadratic)
             </button>
-          ))}
+            <button
+              onClick={() => setModel('exponential')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${model === 'exponential' ? 'bg-crimson/20 text-red-400' : 'text-white/50 hover:text-white'}`}
+            >
+              Hardcore (Exponential)
+            </button>
+          </div>
+
+          <div className="w-full max-w-md">
+            <div className="flex justify-between mb-2">
+              <span className="text-xs font-bold uppercase text-text-muted">Encounter Level</span>
+              <span className="text-xs font-bold text-white">Lvl {level}</span>
+            </div>
+            <input 
+              type="range" 
+              min="1" max="10" 
+              value={level} 
+              onChange={(e) => setLevel(parseInt(e.target.value))}
+              className="w-full accent-crimson"
+            />
+            
+            {totalPhases > 1 && (
+              <div className="mt-3 flex items-start gap-2 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-orange-400">
+                <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <p className="text-xs font-semibold">
+                  Safety Rule: Duration exceeds 120m. Encounter split into {totalPhases} combat phases with mandatory 15m recovery intervals.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -176,22 +277,15 @@ export default function DemonEncounter() {
             style={{
               width: 290,
               height: 290,
-              boxShadow: status === STATUS.RUNNING
+              boxShadow: (status === STATUS.RUNNING || status === STATUS.RESTING)
                 ? `0 0 60px ${arcColor}40, 0 0 120px ${arcColor}15`
                 : 'none',
-              opacity: status === STATUS.RUNNING ? 1 : 0,
+              opacity: (status === STATUS.RUNNING || status === STATUS.RESTING) ? 1 : 0,
             }}
           />
 
           <svg width="280" height="280" style={{ transform: 'rotate(-90deg)' }}>
-            {/* Background track */}
-            <circle
-              cx="140" cy="140" r={radius}
-              fill="none"
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth="10"
-            />
-            {/* Progress arc */}
+            <circle cx="140" cy="140" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
             <circle
               cx="140" cy="140" r={radius}
               fill="none"
@@ -217,11 +311,7 @@ export default function DemonEncounter() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
                 className="absolute text-red-500 font-heading font-black text-2xl pointer-events-none z-20 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]"
-                style={{
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                }}
+                style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
               >
                 -{p.damage}
               </motion.div>
@@ -233,7 +323,7 @@ export default function DemonEncounter() {
             {status === STATUS.VICTORY ? (
               <div className="flex flex-col items-center gap-2">
                 <Trophy className="w-12 h-12 text-white animate-bounce" />
-                <p className="text-white font-heading font-bold text-lg">Demon Slain!</p>
+                <p className="text-white font-heading font-bold text-lg">Demon Damaged!</p>
                 {xpReward && (
                   <p className="text-zinc-300 text-sm font-bold flex items-center gap-1">
                     <Zap className="w-4 h-4" /> +{xpReward} XP
@@ -245,6 +335,14 @@ export default function DemonEncounter() {
                 <Skull className="w-12 h-12 text-gray-500" />
                 <p className="text-gray-400 font-heading font-bold text-lg">Fled the battle...</p>
               </div>
+            ) : status === STATUS.RESTING ? (
+              <div className="flex flex-col items-center gap-2">
+                <Coffee className="w-8 h-8 text-blue-400 animate-pulse" />
+                <div className="text-4xl font-mono font-extrabold text-blue-300 tracking-tight">
+                  {formatTime(timeLeft)}
+                </div>
+                <p className="text-[10px] text-blue-400 uppercase tracking-widest font-bold">Mandatory Recovery</p>
+              </div>
             ) : (
               <>
                 <div className="text-5xl font-mono font-extrabold text-text-primary tracking-tight">
@@ -253,15 +351,17 @@ export default function DemonEncounter() {
                 <p className="text-xs text-text-muted mt-2 uppercase tracking-widest">
                   {isRunning ? (
                     <span className="text-crimson animate-pulse flex items-center gap-1">
-                      <Flame className="w-3 h-3" /> Battling {selectedDuration.demon}
+                      <Flame className="w-3 h-3" /> Battling {bossName}
                     </span>
                   ) : (
-                    status === STATUS.PAUSED ? 'Paused — Demon is waiting' : selectedDuration.demon
+                    status === STATUS.PAUSED ? 'Paused — Demon is waiting' : `Target: ${bossName}`
                   )}
                 </p>
-                <p className="text-[10px] text-text-muted mt-1 kanji-display opacity-50">
-                  {selectedDuration.rank}
-                </p>
+                {totalPhases > 1 && (
+                  <p className="text-[10px] text-orange-400 mt-1 font-bold uppercase">
+                    Phase {currentPhase} of {totalPhases}
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -279,8 +379,8 @@ export default function DemonEncounter() {
           {isIdle && (
             <button
               onClick={handleStart}
-              className="btn-primary flex items-center gap-2 px-10 py-4 text-lg font-bold"
-              id="start-encounter"
+              disabled={campaignLoading}
+              className="btn-primary flex items-center gap-2 px-10 py-4 text-lg font-bold disabled:opacity-50"
             >
               <Swords className="w-5 h-5" />
               Engage Demon
@@ -291,7 +391,7 @@ export default function DemonEncounter() {
             <>
               <button onClick={handlePause} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 text-white border border-white/20 font-semibold hover:bg-white/20 transition-all">
                 <Pause className="w-4 h-4" />
-                Rest
+                Hold Position
               </button>
               <button onClick={handleAbandon} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-semibold hover:bg-red-500/20 transition-all">
                 <Shield className="w-4 h-4" />
@@ -316,9 +416,9 @@ export default function DemonEncounter() {
 
         {/* Info tip */}
         {isIdle && (
-          <div className="glass-card p-4 max-w-md text-center border border-white/10 bg-white/5">
-            <p className="text-xs text-white/70">
-              ⚠️ Stay focused and do not leave the app. Fleeing the battle grants <strong>no XP</strong>. Slaying the demon fully repairs your Nichirin Sword!
+          <div className="glass-card p-4 max-w-md text-center border border-white/10 bg-white/5 mt-4">
+            <p className="text-[11px] text-white/70">
+              ⚠️ The Encounter Safety Rule is active. Marathon focus blocks exceeding 120 minutes will be strictly partitioned with mandatory recovery intervals to prevent burnout.
             </p>
           </div>
         )}
