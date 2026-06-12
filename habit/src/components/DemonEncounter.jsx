@@ -21,7 +21,7 @@ const calculateExponential = (n) => Math.round(5 * Math.pow(1.5, n - 1));
 export default function DemonEncounter() {
   const { user } = useAuthStore();
   const { finishEncounter } = useHabitStore();
-  const { activeCampaign, fetchActiveCampaign, spawnCampaign, damageActiveCampaign, loading: campaignLoading } = useCampaignStore();
+  const { activeCampaign, fetchActiveCampaign, spawnCampaign, loading: campaignLoading } = useCampaignStore();
 
   const [level, setLevel] = useState(3);
   const [model, setModel] = useState('quadratic');
@@ -133,20 +133,14 @@ export default function DemonEncounter() {
     if (status === STATUS.VICTORY && user) {
       const totalSessionMinutes = model === 'quadratic' ? calculateQuadratic(level) : calculateExponential(level);
       
-      // Award XP
+      // Award XP and deal damage
       finishEncounter(user.id, totalSessionMinutes).then((result) => {
         if (result && !result.error) {
           setXpReward(result.xpGained);
         }
       });
-
-      // Deal massive damage to the active campaign boss
-      if (activeCampaign) {
-        const damageToDeal = totalSessionMinutes * 10; // 10 damage per minute of focus
-        damageActiveCampaign(user.id, damageToDeal);
-      }
     }
-  }, [status, user, finishEncounter, activeCampaign, damageActiveCampaign, level, model]);
+  }, [status, user, finishEncounter, level, model]);
 
   const handleStart = async () => {
     if (!activeCampaign && user) {

@@ -4,9 +4,10 @@ import { useAuthStore } from './stores/authStore';
 import { useSecurityStore } from './stores/securityStore';
 import FinalSelectionAuth from './components/FinalSelectionAuth';
 import TrainingDashboard from './components/TrainingDashboard';
-import ButterflyMansionAnalytics from './components/ButterflyMansionAnalytics';
-import DemonEncounter from './components/DemonEncounter';
+import SlayerLedger from './components/SlayerLedger';
 import SlayerStatusDashboard from './components/SlayerStatusDashboard';
+import DemonEncyclopedia from './components/DemonEncyclopedia';
+import DemonEncounter from './components/DemonEncounter';
 import Navbar from './components/Navbar';
 import PrivacyScreen from './components/PrivacyScreen';
 import LaunchSequence from './components/LaunchSequence';
@@ -125,14 +126,11 @@ function App() {
           <Navbar />
           
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-5 md:px-6 md:py-7 lg:px-8">
-            <div className="mb-6">
-              <SlayerStatusDashboard />
-            </div>
-            
             <Routes>
               <Route path="/" element={<TrainingDashboard />} />
-              <Route path="/analytics" element={<ButterflyMansionAnalytics />} />
+              <Route path="/ledger" element={<SlayerLedger />} />
               <Route path="/encounter" element={<DemonEncounter />} />
+              <Route path="/encyclopedia" element={<DemonEncyclopedia />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

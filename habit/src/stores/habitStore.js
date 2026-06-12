@@ -64,16 +64,16 @@ const mergeLogs = (...groups) => {
   return [...logsById.values()];
 };
 
-const updateTechniqueStreak = async (techniqueId, newStreak) => {
+const updateTechniqueStats = async (techniqueId, newStreak, newXp, newLevel) => {
   const { error: habitError } = await supabase
     .from('habits')
-    .update({ streak_count: newStreak })
+    .update({ streak_count: newStreak, xp: newXp, level: newLevel })
     .eq('id', techniqueId);
 
   if (habitError) {
     await supabase
       .from('breathing_techniques')
-      .update({ streak_count: newStreak })
+      .update({ streak_count: newStreak, xp: newXp, level: newLevel })
       .eq('id', techniqueId);
   }
 };
@@ -363,7 +363,18 @@ const useHabitStore = create(
 
         const currentTechniqueStreak = getTechniqueStreakFromLogs(techniqueId, logsBeforeCompletion, today);
         const streakBonus = Math.min(currentTechniqueStreak, 20);
-        const xpGained = 10 + streakBonus;
+        const xpGained = 10 + streakBonus; // User Corps XP
+
+        // Technique Mastery logic
+        const techXpGained = 10;
+        let newTechXp = (technique.xp || 0) + techXpGained;
+        let newTechLevel = technique.level || 1;
+        let requiredForNext = Math.floor(100 * Math.pow(newTechLevel, 1.5));
+        
+        while (newTechXp >= requiredForNext) {
+          newTechLevel += 1;
+          requiredForNext = Math.floor(100 * Math.pow(newTechLevel, 1.5));
+        }
 
         if (!window.navigator.onLine && !forcedDate) {
           set({
@@ -417,7 +428,16 @@ const useHabitStore = create(
           const completedLog = normalizeActivityLog(logData);
           const logsAfterCompletion = mergeLogs(logsBeforeCompletion, completedLog);
           const newStreak = getTechniqueStreakFromLogs(techniqueId, logsAfterCompletion, today);
-          await updateTechniqueStreak(techniqueId, newStreak);
+          await updateTechniqueStats(techniqueId, newStreak, newTechXp, newTechLevel);
+
+          // Damage Campaign
+          const campaignStore = (await import('./campaignStore')).default.getState();
+          if (campaignStore.activeCampaign) {
+             const result = await campaignStore.damageActiveCampaign(userId, xpGained);
+             if (result?.defeated) {
+               await sendCrowMessage(userId, { title: 'Campaign Defeated', content: `You have successfully defeated the ${campaignStore.activeCampaign.demon_name}!`, type: CROW_MESSAGE_TYPES.milestone });
+             }
+          }
 
           const authStore = useAuthStore.getState();
           const profile = authStore.profile;
@@ -461,11 +481,25 @@ const useHabitStore = create(
             // Track analytics
             await authStore.trackEvent('habit_completed', 'habit', xpGained, { techniqueId, element: technique.breathing_element });
 
+            // Check Perfect Day (+50 XP)
+            const { techniques } = get();
+            const dailyTechniques = techniques.filter((t) => t.frequency === 'daily');
+            const todaysCompletionCount = logsAfterCompletion.filter((log) => isCompletionLog(log) && getLogDate(log) === today).length;
+            if (dailyTechniques.length > 0 && todaysCompletionCount === dailyTechniques.length) {
+               // Give perfect day bonus!
+               await authStore.updateProfile({ total_xp: newXp + 50 });
+               await sendCrowMessage(userId, {
+                 title: 'Perfect Day Reached',
+                 content: 'CAW! All daily forms complete. The Corps rewards you with 50 bonus XP!',
+                 type: CROW_MESSAGE_TYPES.milestone,
+               });
+            }
+
             set((state) => ({
               todaysLogs: mergeLogs(state.todaysLogs, completedLog),
               allLogs: mergeLogs(state.allLogs, completedLog),
               techniques: state.techniques.map((t) =>
-                t.id === techniqueId ? { ...t, streak_count: newStreak } : t
+                t.id === techniqueId ? { ...t, streak_count: newStreak, xp: newTechXp, level: newTechLevel } : t
               ),
             }));
 
@@ -498,7 +532,7 @@ const useHabitStore = create(
       },
 
       finishEncounter: async (userId, durationMinutes, forcedDate = null) => {
-        const xpGained = durationMinutes;
+        const xpGained = 20; // Changed to fixed 20 XP per focus session as per new specs
         const today = forcedDate || getToday();
         const { pending_actions } = get();
 
@@ -525,6 +559,15 @@ const useHabitStore = create(
 
           const normalized = normalizeActivityLog(activityLog);
           set((state) => ({ allLogs: mergeLogs(state.allLogs, normalized) }));
+
+          // Damage Campaign
+          const campaignStore = (await import('./campaignStore')).default.getState();
+          if (campaignStore.activeCampaign) {
+             const result = await campaignStore.damageActiveCampaign(userId, xpGained);
+             if (result?.defeated) {
+               await sendCrowMessage(userId, { title: 'Campaign Defeated', content: `You have successfully defeated the ${campaignStore.activeCampaign.demon_name}!`, type: CROW_MESSAGE_TYPES.milestone });
+             }
+          }
 
           const authStore = useAuthStore.getState();
           const profile = authStore.profile;
@@ -559,6 +602,25 @@ const useHabitStore = create(
     }
   )
 );
+
+export const getTechniqueMasteryInfo = (level = 1, xp = 0) => {
+  const currentLvl = Math.max(1, level);
+  const requiredForNext = Math.floor(100 * Math.pow(currentLvl, 1.5));
+  const requiredForCurrent = currentLvl === 1 ? 0 : Math.floor(100 * Math.pow(currentLvl - 1, 1.5));
+  
+  const xpIntoLevel = Math.max(0, xp - requiredForCurrent);
+  const xpNeededForLevel = requiredForNext - requiredForCurrent;
+  const progress = Math.min(100, Math.max(0, (xpIntoLevel / xpNeededForLevel) * 100));
+
+  let title = 'Novice';
+  if (currentLvl >= 20) title = 'Hashira';
+  else if (currentLvl >= 15) title = 'Master';
+  else if (currentLvl >= 10) title = 'Expert';
+  else if (currentLvl >= 7) title = 'Practitioner';
+  else if (currentLvl >= 4) title = 'Apprentice';
+
+  return { title, progress, requiredForNext, requiredForCurrent };
+};
 
 export { BREATHING_ELEMENTS };
 export default useHabitStore;

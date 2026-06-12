@@ -3,7 +3,7 @@ import { useAuthStore, getRankInfo } from '../stores/authStore';
 import useGrowthStore from '../stores/growthStore';
 import { Sword, Activity, LogOut, Menu, X, Swords,
          Droplets, Flame, Zap, Wind, Mountain, CloudFog,
-         Heart, Waves, Bug, Moon, Sun } from 'lucide-react';
+         Heart, Waves, Bug, Moon, Sun, Skull, Compass } from 'lucide-react';
 import { useState } from 'react';
 
 const ELEMENT_META = {
@@ -34,7 +34,8 @@ export default function Navbar() {
 
   const navItems = [
     { path: '/', label: 'Training Grounds', icon: Sword },
-    { path: '/analytics', label: 'Butterfly Mansion', icon: Activity },
+    { path: '/ledger', label: 'Slayer Ledger', icon: Compass },
+    { path: '/encyclopedia', label: 'Demon Encyclopedia', icon: Skull },
     { path: '/encounter', label: 'Demon Encounter', icon: Swords },
   ];
 

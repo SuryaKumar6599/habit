@@ -8,6 +8,7 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
   const [formName, setFormName] = useState('');
   const [description, setDescription] = useState('');
   const [breathingElement, setBreathingElement] = useState('Water');
+  const [category, setCategory] = useState('Mind');
   const [frequency, setFrequency] = useState('daily');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -24,6 +25,7 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
       formName: formName.trim(),
       description: description.trim(),
       breathingElement,
+      category,
       frequency,
     });
 
@@ -32,6 +34,7 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
       setFormName('');
       setDescription('');
       setBreathingElement('Water');
+      setCategory('Mind');
       setFrequency('daily');
       onClose();
     } else {
@@ -160,6 +163,33 @@ export default function AddTechniqueModal({ isOpen, onClose }) {
                     >
                       {key}
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Category Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-widest mb-2.5">
+              Discipline Category
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {['Mind', 'Body', 'Discipline', 'Wealth'].map((cat) => {
+                const isSelected = category === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className="flex-1 py-2 rounded-xl text-sm font-heading font-semibold transition-all"
+                    style={{
+                      background: isSelected ? 'rgba(220,38,38,0.15)' : 'rgba(255,255,255,0.03)',
+                      border: `1.5px solid ${isSelected ? 'rgba(220,38,38,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                      color: isSelected ? '#fca5a5' : '#5c5a6e',
+                    }}
+                  >
+                    {cat}
                   </button>
                 );
               })}

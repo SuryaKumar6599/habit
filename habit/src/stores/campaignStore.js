@@ -2,12 +2,9 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabaseClient';
 
 const DEMON_TYPES = [
-  { name: 'Distraction Demon', baseHp: 500 },
-  { name: 'Sloth Demon', baseHp: 800 },
-  { name: 'Apathy Demon', baseHp: 1200 },
-  { name: 'Weakness Demon', baseHp: 1500 },
-  { name: 'Ignorance Demon', baseHp: 2000 },
-  { name: 'Despair Demon', baseHp: 3000 },
+  { goal: 'Career', name: 'Ignorance Demon', tier: 'Upper Moon', baseHp: 3000 },
+  { goal: 'Health', name: 'Decay Demon', tier: 'Upper Moon', baseHp: 3000 },
+  { goal: 'Wealth', name: 'Poverty Demon', tier: 'Upper Moon', baseHp: 3000 },
 ];
 
 const useCampaignStore = create((set, get) => ({
@@ -47,7 +44,7 @@ const useCampaignStore = create((set, get) => ({
         .insert({
           user_id: userId,
           demon_name: type.name,
-          tier: 'Lower Moon',
+          tier: type.tier,
           max_hp: type.baseHp,
           current_hp: type.baseHp,
           linked_habit_id: habitId,

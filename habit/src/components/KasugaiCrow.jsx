@@ -5,7 +5,8 @@ import { useAuthStore } from '../stores/authStore';
 import useHabitStore from '../stores/habitStore';
 import useGrowthStore from '../stores/growthStore';
 import useCrowStore from '../stores/crowStore';
-import { generateCrowMessage } from '../lib/ollamaClient';
+import useCrowStore from '../stores/crowStore';
+import useCampaignStore from '../stores/campaignStore';
 
 // Lines keyed by relationship tier
 const LINES = {
@@ -39,28 +40,43 @@ const LINES = {
   ],
 };
 
-// Growth-aware crow summons — injected based on live metrics
-const getGrowthSummons = (growthData) => {
+// Dynamic local templates based on current user state
+const getGrowthSummons = (growthData, techniques, currentCampaign) => {
   const msgs = [];
-  const { consistencyPercent, currentRank, nextRank, progressToNextRank, corruptionIndex, swordTier, daysTrained } = growthData;
+  const { currentRank, nextRank, progressToNextRank, corruptionIndex, daysTrained } = growthData;
 
-  if (nextRank && progressToNextRank >= 80)
-    msgs.push(`CAW! You are ${100 - progressToNextRank}% away from ${nextRank.rank}. Do not stop now!`);
-  if (nextRank && progressToNextRank < 20)
-    msgs.push(`The path to ${nextRank.rank} is long. But so was the path to where you stand now.`);
-  if (corruptionIndex > 50)
-    msgs.push(`CAW! Corruption spreading. ${corruptionIndex}% corruption detected. Train. Now. Please.`);
-  if (corruptionIndex === 0)
-    msgs.push(`The village is clean. Demons have not dared approach. ${currentRank.rank} is worthy.`);
-  if (consistencyPercent >= 90)
-    msgs.push(`Training Efficiency: ${consistencyPercent}%. The Hashira have been informed. They are impressed.`);
-  if (consistencyPercent < 50 && daysTrained > 7)
-    msgs.push(`Only ${consistencyPercent}% efficiency. I have seen worse. I have not forgotten those slayers either.`);
-  if (swordTier === 'Elite Nichirin' || swordTier === 'Breathing Resonance')
-    msgs.push(`Your blade resonates. I can feel the breathing from here. ${swordTier} achieved.`);
-  if (daysTrained === 7)  msgs.push(`One week of training complete. The Corps has noticed your commitment.`);
-  if (daysTrained === 30) msgs.push(`A full month of training. Many give up here. You have not. CAW.`);
-  if (daysTrained === 90) msgs.push(`Three months. Your growth multiplier is ${growthData.growthMultiplier}×. Do you feel it?`);
+  // Template 1: Rank Progress
+  if (nextRank && progressToNextRank >= 80) {
+    const daysLeft = Math.ceil((100 - progressToNextRank) / 2); // Roughly
+    msgs.push(`Master... Only ${daysLeft} days of Training Efficiency remain until your ${nextRank.rank} Exam.`);
+  }
+
+  // Template 2: Weakest Technique
+  if (techniques && techniques.length > 0) {
+    const sorted = [...techniques].sort((a, b) => a.level - b.level);
+    const weakest = sorted[0];
+    if (weakest && weakest.level < 5) {
+      msgs.push(`Master... ${weakest.form_name} is only at Novice level. A demon will exploit this weakness.`);
+    }
+  }
+
+  // Template 3: Corruption / Campaign
+  if (currentCampaign) {
+    const hpPct = Math.round((currentCampaign.current_hp / currentCampaign.max_hp) * 100);
+    if (hpPct < 20) {
+      msgs.push(`CAW! The ${currentCampaign.demon_name} is near death! Strike now!`);
+    } else if (hpPct > 80) {
+      msgs.push(`Master... The ${currentCampaign.demon_name}'s aura is overwhelming. Purification is advised.`);
+    } else {
+      msgs.push(`The ${currentCampaign.demon_name} is at ${hpPct}% vitality. Keep pressing the attack!`);
+    }
+  } else if (corruptionIndex > 70) {
+    msgs.push(`Master... The Upper Moon aura has reached ${corruptionIndex}%. Purification is advised.`);
+  }
+
+  if (msgs.length === 0) {
+     msgs.push(`The village is clean. ${currentRank.rank} is worthy.`);
+  }
 
   return msgs;
 };
@@ -177,7 +193,8 @@ const MESSAGE_TYPE_STYLES = {
 
 export default function KasugaiCrow() {
   const { profile, user } = useAuthStore();
-  const { todaysLogs, sessionOpenedAt, interventionFired, markInterventionFired } = useHabitStore();
+  const { todaysLogs, sessionOpenedAt, interventionFired, markInterventionFired, techniques } = useHabitStore();
+  const { activeCampaign: currentCampaign } = useCampaignStore();
   const { messages, fetchMessages, markAsRead, markAllRead, getUnreadCount } = useCrowStore();
 
   const relationship = profile?.crow_relationship ?? 50;
@@ -188,8 +205,8 @@ export default function KasugaiCrow() {
 
   // Pick initial message — prefer growth summons when available
   const getInitialMessage = () => {
-    const summons = getGrowthSummons(growthData);
-    if (summons.length > 0) return summons[0];
+    const summons = getGrowthSummons(growthData, techniques, currentCampaign);
+    if (summons.length > 0) return summons[Math.floor(Math.random() * summons.length)];
     return pickLine(tier, { current: 0 });
   };
 
@@ -207,18 +224,12 @@ export default function KasugaiCrow() {
 
   useEffect(() => {
     seenRef.current = 0;
-    const fetchAI = async () => {
-      setIsThinking(true);
-      const aiMsg = await generateCrowMessage(growthData, relationship);
-      if (aiMsg) {
-        setMessage(aiMsg);
-      } else {
-        setMessage(pickLine(tier, seenRef));
-      }
-      setIsThinking(false);
-    };
-    fetchAI();
-  }, [tier]); // Re-fetch when tier changes
+    const summons = getGrowthSummons(growthData, techniques, currentCampaign);
+    const newMsg = summons.length > 0
+      ? summons[Math.floor(Math.random() * summons.length)]
+      : pickLine(tier, seenRef);
+    setMessage(newMsg);
+  }, [tier, growthData, techniques, currentCampaign]); // Re-fetch when state changes
 
   // Procrastination detector
   useEffect(() => {
@@ -249,21 +260,11 @@ export default function KasugaiCrow() {
       setTimeout(() => setShowHeart(false), 1200);
       setTimeout(() => setRipple(false), 700);
       
-      const fetchNewMessage = async () => {
-        setIsThinking(true);
-        const aiMsg = await generateCrowMessage(growthData, relationship);
-        if (aiMsg) {
-          setMessage(aiMsg);
-        } else {
-          const summons = getGrowthSummons(growthData);
-          const newMsg = summons.length > 0
-            ? summons[Math.floor(Math.random() * summons.length)]
-            : pickLine(tier, seenRef);
-          setMessage(newMsg);
-        }
-        setIsThinking(false);
-      };
-      fetchNewMessage();
+      const summons = getGrowthSummons(growthData, techniques, currentCampaign);
+      const newMsg = summons.length > 0
+        ? summons[Math.floor(Math.random() * summons.length)]
+        : pickLine(tier, seenRef);
+      setMessage(newMsg);
     }
     prevLogsLen.current = todaysLogs.length;
   }, [todaysLogs.length, tier, growthData, relationship]);

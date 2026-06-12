@@ -1,17 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import useHabitStore, { BREATHING_ELEMENTS } from '../stores/habitStore';
+import useHabitStore, { BREATHING_ELEMENTS, getTechniqueMasteryInfo } from '../stores/habitStore';
 import { useAuthStore } from '../stores/authStore';
-import { Plus, Flame, Check, Trash2, AlertCircle, Swords, Target, Shield, Skull } from 'lucide-react';
+import { Plus, Check, Trash2, AlertCircle, Swords, Brain, Dumbbell, Shield, ShieldAlert, Coins } from 'lucide-react';
 import AddTechniqueModal from './AddTechniqueModal';
-import CorpsSettings from './CorpsSettings';
-import KasugaiCrow from './KasugaiCrow';
-import SwordDurability from './SwordDurability';
-import DemonPanel from './DemonPanel';
 import HashiraTrainingModal from './HashiraTrainingModal';
-import { computeActiveDemons } from '../lib/worldState';
-import { supabase } from '../lib/supabaseClient';
-import DailyMissions from './DailyMissions';
 import BreathingEffect from './BreathingEffect';
+import { supabase } from '../lib/supabaseClient';
+
+// New layout components
+import SlayerStatusDashboard from './SlayerStatusDashboard';
+import CurrentCampaignCard from './CurrentCampaignCard';
+import KasugaiCrow from './KasugaiCrow';
+import GrowthSnapshotCard from './GrowthSnapshotCard';
+
+const CATEGORY_ICONS = {
+  Mind: Brain,
+  Body: Dumbbell,
+  Discipline: Shield,
+  Wealth: Coins,
+};
 
 export default function TrainingDashboard() {
   const { user, trackEvent } = useAuthStore();
@@ -35,8 +42,8 @@ export default function TrainingDashboard() {
   const [toast, setToast] = useState(null);
   const [showHashiraModal, setShowHashiraModal] = useState(false);
   const [completionEffect, setCompletionEffect] = useState(null);
-  const [activePanel, setActivePanel] = useState('forms');
   const [highlightTechniqueId, setHighlightTechniqueId] = useState(null);
+  
   const toastTimer = useRef(null);
   const effectTimer = useRef(null);
   const techniqueRefs = useRef({});
@@ -71,31 +78,6 @@ export default function TrainingDashboard() {
     };
   }, [user, fetchTechniques, fetchTodaysLogs, fetchAllLogs, detectMissedDays, markSessionOpen, trackEvent]);
 
-  const handleVanquishDemon = useCallback((techniqueId) => {
-    setActivePanel('forms');
-    setHighlightTechniqueId(techniqueId);
-    const card = techniqueRefs.current[techniqueId];
-    if (card) {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    setTimeout(() => setHighlightTechniqueId(null), 3000);
-  }, []);
-
-  const activeDemons = computeActiveDemons(techniques, allLogs);
-  const completedTodayCount = techniques.filter((technique) =>
-    todaysLogs.some((log) => log.technique_id === technique.id)
-  ).length;
-  const completionRate = techniques.length > 0
-    ? Math.round((completedTodayCount / techniques.length) * 100)
-    : 0;
-  const supportCount = 3;
-  const panelTabs = [
-    { id: 'forms', label: 'Forms', count: techniques.length, Icon: Swords },
-    { id: 'missions', label: 'Bounties', count: null, Icon: Target },
-    { id: 'threats', label: 'Threats', count: activeDemons.length, Icon: Skull },
-    { id: 'support', label: 'Support', count: supportCount, Icon: Shield },
-  ];
-
   const showToast = useCallback((msg, type = 'error') => {
     setToast({ msg, type });
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -111,6 +93,7 @@ export default function TrainingDashboard() {
       setExecutingId(null);
       setRippleId(null);
     }, 700);
+    
     if (result?.error) {
       showToast(`⚠️ Failed to save: ${result.error}`);
     } else if (result?.queued) {
@@ -140,36 +123,19 @@ export default function TrainingDashboard() {
     }
   };
 
-  if (loading && techniques.length === 0) {
-    return <div className="text-center py-20 text-text-muted animate-pulse">Loading forms...</div>;
-  }
-
-  const renderEmptyTechniques = () => (
-    <div className="glass-card p-10 text-center border-dashed border-white/10">
-      <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/10">
-        <Flame className="w-8 h-8 text-text-muted" />
-      </div>
-      <h3 className="text-lg font-bold text-text-primary mb-2">No Techniques Yet</h3>
-      <p className="text-sm text-text-secondary max-w-md mx-auto">
-        The Demon Slayer Corps requires daily discipline. Add your first breathing technique to begin training.
-      </p>
-    </div>
-  );
-
-  const renderTechniqueCard = (technique, index = 0, isRailCard = false) => {
+  const renderTechniqueCard = (technique, index = 0) => {
     const element = BREATHING_ELEMENTS[technique.breathing_element];
     const isCompletedToday = todaysLogs.some(l => l.technique_id === technique.id);
     const isExecuting = executingId === technique.id;
+    const masteryInfo = getTechniqueMasteryInfo(technique.level || 1, technique.xp || 0);
 
     return (
       <div
         key={technique.id}
         ref={(el) => { techniqueRefs.current[technique.id] = el; }}
-        className={`technique-card interactive-card glass-card p-4 relative overflow-hidden flex flex-col min-h-[178px] transition-all duration-300 ${
+        className={`technique-card interactive-card glass-card p-4 relative overflow-hidden flex flex-col min-h-[190px] transition-all duration-300 ${
           isCompletedToday ? 'opacity-72' : 'glass-card-hover'
-        } ${isRailCard ? 'min-w-[82vw] snap-start' : ''} ${
-          highlightTechniqueId === technique.id ? 'ring-2 ring-crimson/60' : ''
-        }`}
+        } ${highlightTechniqueId === technique.id ? 'ring-2 ring-crimson/60' : ''}`}
         style={{
           borderLeft: `2px solid ${element?.color}`,
           '--technique-color': element?.color,
@@ -187,9 +153,9 @@ export default function TrainingDashboard() {
           }}
         />
 
-        <div className="flex justify-between items-start gap-3 mb-3 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+        <div className="flex justify-between items-start gap-3 mb-2 relative z-10">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span
                 className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
                 style={{
@@ -200,13 +166,11 @@ export default function TrainingDashboard() {
               >
                 {technique.breathing_element}
               </span>
-              {technique.streak_count > 0 && (
-                <span className="flex items-center text-[10px] font-bold text-white bg-white/10 px-2 py-0.5 rounded-md border border-white/20">
-                  <Flame className="w-3 h-3 mr-1" /> {technique.streak_count} Streak
-                </span>
-              )}
+              <span className="text-[10px] font-bold text-text-secondary bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                Lv. {technique.level || 1} {masteryInfo.title}
+              </span>
             </div>
-            <h3 className="text-lg font-bold text-text-primary leading-tight mt-2">
+            <h3 className="text-lg font-bold text-text-primary leading-tight mt-1">
               {technique.form_name}
             </h3>
           </div>
@@ -220,9 +184,17 @@ export default function TrainingDashboard() {
           </button>
         </div>
 
-        <p className="text-xs text-text-secondary mb-4 line-clamp-2 relative z-10">
-          {technique.description}
-        </p>
+        <div className="mb-4 relative z-10">
+          <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden mb-1">
+            <div 
+              className="h-full rounded-full transition-all duration-500" 
+              style={{ width: `${masteryInfo.progress}%`, background: element?.color }} 
+            />
+          </div>
+          <p className="text-[9px] text-text-muted text-right">
+            {(technique.xp || 0)} / {masteryInfo.requiredForNext} XP
+          </p>
+        </div>
 
         <div className="mt-auto relative z-10">
           {isCompletedToday ? (
@@ -263,7 +235,6 @@ export default function TrainingDashboard() {
                     : `0 4px 15px ${element?.color}40`,
                   animation: isExecuting ? 'execute-burst 0.5s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
                 }}
-                id={`execute-${technique.id}`}
               >
                 <Swords className="w-4 h-4" />
                 {isExecuting ? 'Executing...' : 'Execute Form'}
@@ -275,44 +246,23 @@ export default function TrainingDashboard() {
     );
   };
 
-  const renderMobilePanel = () => {
-    if (activePanel === 'forms') {
-      return techniques.length === 0 ? renderEmptyTechniques() : (
-        <div className="mobile-card-rail">
-          {techniques.map((technique, index) => renderTechniqueCard(technique, index, true))}
-        </div>
-      );
-    }
+  if (loading && techniques.length === 0) {
+    return <div className="text-center py-20 text-text-muted animate-pulse">Loading training grounds...</div>;
+  }
 
-    if (activePanel === 'missions') {
-      return <DailyMissions compactRail />;
+  // Group techniques by category (Mind, Body, Discipline, Wealth), fallback to Mind
+  const groupedTechniques = techniques.reduce((acc, tech) => {
+    let cat = tech.category;
+    if (!['Mind', 'Body', 'Discipline', 'Wealth'].includes(cat)) {
+      cat = 'Mind'; // default
     }
-
-    if (activePanel === 'threats') {
-      return activeDemons.length > 0 ? (
-        <DemonPanel demons={activeDemons} compactRail onVanquish={handleVanquishDemon} />
-      ) : (
-        <div className="glass-card p-6 text-center">
-          <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3">
-            <Shield className="w-6 h-6 text-white" />
-          </div>
-          <h3 className="text-base font-heading font-bold text-text-primary">No active threats</h3>
-          <p className="text-xs text-text-muted mt-1">Your missed-day pressure is clear for now.</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        <KasugaiCrow />
-        <CorpsSettings />
-        <SwordDurability />
-      </div>
-    );
-  };
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(tech);
+    return acc;
+  }, { Mind: [], Body: [], Discipline: [], Wealth: [] });
 
   return (
-    <div className="animate-fade-in pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
+    <div className="animate-fade-in pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8 max-w-3xl mx-auto">
       <BreathingEffect key={completionEffect?.id} effect={completionEffect} />
 
       {/* Toast notification */}
@@ -330,98 +280,78 @@ export default function TrainingDashboard() {
           {toast.msg}
         </div>
       )}
-      <div className="glass-card p-4 md:p-5 mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-crimson/0 via-crimson/50 to-crimson/0" />
+
+      {/* 1. Slayer Status */}
+      <div className="mb-4">
+        <SlayerStatusDashboard />
+      </div>
+
+      {/* 2. Current Campaign */}
+      <div className="mb-4">
+        <CurrentCampaignCard />
+      </div>
+
+      {/* 3. Crow Guidance */}
+      <div className="mb-8">
+        <KasugaiCrow />
+      </div>
+
+      {/* 4. Today's Training Header */}
+      <div className="flex items-center justify-between mb-4 mt-8 px-1">
         <div>
-          <p className="section-label mb-1">Training Grounds</p>
-          <h1 className="text-2xl md:text-3xl font-heading font-extrabold text-text-primary mb-1">
-            Training Grounds
-          </h1>
-          <p className="text-sm text-text-secondary">{completedTodayCount} of {techniques.length} forms completed today.</p>
+          <h2 className="text-xl font-heading font-extrabold text-text-primary">Today's Training</h2>
+          <p className="text-sm text-text-secondary">Execute your forms with absolute focus.</p>
         </div>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-primary border border-white/10 transition-colors"
+          title="Add Technique"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
+      </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 min-w-24">
-              <p className="section-label !text-[9px]">Today</p>
-              <p className="font-heading font-bold text-text-primary">{completionRate}%</p>
+      {/* 4. Techniques Grouped */}
+      <div className="space-y-8 mb-8">
+        {['Mind', 'Body', 'Discipline', 'Wealth'].map((category) => {
+          const techs = groupedTechniques[category];
+          if (!techs || techs.length === 0) return null;
+          const Icon = CATEGORY_ICONS[category] || ShieldAlert;
+
+          return (
+            <div key={category}>
+              <div className="flex items-center gap-2 mb-3 pl-1">
+                <Icon className="w-4 h-4 text-crimson" />
+                <h3 className="font-heading font-bold text-text-primary">{category} Forms</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {techs.map((technique, index) => renderTechniqueCard(technique, index))}
+              </div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 min-w-24">
-              <p className="section-label !text-[9px]">Threats</p>
-              <p className="font-heading font-bold text-text-primary">{activeDemons.length}</p>
-            </div>
+          );
+        })}
+
+        {techniques.length === 0 && (
+          <div className="glass-card p-10 text-center border-dashed border-white/10">
+            <h3 className="text-lg font-bold text-text-primary mb-2">No Techniques Yet</h3>
+            <p className="text-sm text-text-secondary max-w-md mx-auto mb-4">
+              The Demon Slayer Corps requires daily discipline. Add your first breathing technique to begin training.
+            </p>
+            <button onClick={() => setIsAddModalOpen(true)} className="btn-primary inline-flex items-center px-4 py-2">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Technique
+            </button>
           </div>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4" /> Add Technique
-          </button>
-        </div>
+        )}
       </div>
 
-      <div className="lg:hidden">
-        <div className="section-switcher mb-4" role="tablist" aria-label="Training dashboard sections">
-          {panelTabs.map(({ id, label, count, Icon }) => {
-            const isActive = activePanel === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActivePanel(id)}
-                className={`section-switcher__button ${isActive ? 'section-switcher__button--active' : ''}`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{label}</span>
-                {count !== null && <strong>{count}</strong>}
-              </button>
-            );
-          })}
-        </div>
-
-        <div key={activePanel} className="dashboard-panel">
-          {renderMobilePanel()}
-        </div>
+      {/* 5. Growth Snapshot */}
+      <div className="mb-8">
+        <GrowthSnapshotCard />
       </div>
 
-      <div className="hidden lg:grid grid-cols-[minmax(260px,0.9fr)_minmax(0,2fr)] gap-6">
-        {/* Left Column: Stats & Companions */}
-        <div className="lg:col-span-1 order-2 lg:order-1 space-y-4">
-          <KasugaiCrow />
-          <CorpsSettings />
-          <SwordDurability />
-        </div>
-
-        {/* Right Column: Techniques list */}
-        <div className="order-1 lg:order-2 space-y-5">
-          <DailyMissions />
-
-          {activeDemons.length > 0 && (
-            <div className="mb-6">
-              <DemonPanel demons={activeDemons} onVanquish={handleVanquishDemon} />
-            </div>
-          )}
-
-          {techniques.length === 0 ? (
-            renderEmptyTechniques()
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {techniques.map((technique, index) => renderTechniqueCard(technique, index))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <AddTechniqueModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-      />
-
-      {showHashiraModal && (
-        <HashiraTrainingModal onClose={() => setShowHashiraModal(false)} />
-      )}
+      <AddTechniqueModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+      {showHashiraModal && <HashiraTrainingModal onClose={() => setShowHashiraModal(false)} />}
     </div>
   );
 }
